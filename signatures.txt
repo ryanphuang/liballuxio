@@ -1,0 +1,211 @@
+// generated using javap -classpath client/tachyon-client-0.6.4-jar-with-dependencies.jar -s tachyon.client.TachyonFS
+// to be referenced by JNI calls
+
+public class tachyon.client.TachyonFS extends tachyon.client.AbstractTachyonFS {
+  public static synchronized tachyon.client.TachyonFS get(java.lang.String) throws java.io.IOException;
+    Signature: (Ljava/lang/String;)Ltachyon/client/TachyonFS;
+
+  public static synchronized tachyon.client.TachyonFS get(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Ltachyon/client/TachyonFS;
+
+  public static synchronized tachyon.client.TachyonFS get(java.lang.String, int, boolean) throws java.io.IOException;
+    Signature: (Ljava/lang/String;IZ)Ltachyon/client/TachyonFS;
+
+  synchronized void accessLocalBlock(long) throws java.io.IOException;
+    Signature: (J)V
+
+  synchronized void addCheckpoint(int) throws java.io.IOException;
+    Signature: (I)V
+
+  synchronized boolean asyncCheckpoint(int) throws java.io.IOException;
+    Signature: (I)Z
+
+  public synchronized void cacheBlock(long) throws java.io.IOException;
+    Signature: (J)V
+
+  public synchronized void cancelBlock(long) throws java.io.IOException;
+    Signature: (J)V
+
+  public synchronized void close() throws java.io.IOException;
+    Signature: ()V
+
+  synchronized void completeFile(int) throws java.io.IOException;
+    Signature: (I)V
+
+  synchronized java.lang.String createAndGetUserUfsTempFolder(java.lang.Object) throws java.io.IOException;
+    Signature: (Ljava/lang/Object;)Ljava/lang/String;
+
+  public synchronized int createDependency(java.util.List<java.lang.String>, java.util.List<java.lang.String>, java.lang.String, java.util.List<java.nio.ByteBuffer>, java.lang.String, java.lang.String, java.lang.String, int, long) throws java.io.IOException;
+    Signature: (Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJ)I
+
+  public synchronized int createFile(tachyon.TachyonURI, tachyon.TachyonURI, long, boolean) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Ltachyon/TachyonURI;JZ)I
+
+  public synchronized int createFile(java.lang.String) throws java.io.IOException;
+    Signature: (Ljava/lang/String;)I
+
+  public synchronized int createRawTable(tachyon.TachyonURI, int) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;I)I
+
+  public synchronized int createRawTable(tachyon.TachyonURI, int, java.nio.ByteBuffer) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;ILjava/nio/ByteBuffer;)I
+
+  public synchronized boolean delete(int, tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;Z)Z
+
+  public synchronized boolean delete(java.lang.String, boolean) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Z)Z
+
+  public synchronized boolean exist(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Z
+
+  public synchronized long getBlockId(int, int) throws java.io.IOException;
+    Signature: (II)J
+
+  synchronized int getBlockLockId();
+    Signature: ()I
+
+  synchronized tachyon.thrift.ClientBlockInfo getClientBlockInfo(long) throws java.io.IOException;
+    Signature: (J)Ltachyon/thrift/ClientBlockInfo;
+
+  public synchronized tachyon.thrift.ClientDependencyInfo getClientDependencyInfo(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/thrift/ClientDependencyInfo;
+
+  public synchronized tachyon.client.TachyonFile getFile(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/client/TachyonFile;
+
+  public synchronized tachyon.client.TachyonFile getFile(int, boolean) throws java.io.IOException;
+    Signature: (IZ)Ltachyon/client/TachyonFile;
+
+  public synchronized tachyon.client.TachyonFile getFile(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Ltachyon/client/TachyonFile;
+
+  public synchronized tachyon.client.TachyonFile getFile(java.lang.String) throws java.io.IOException;
+    Signature: (Ljava/lang/String;)Ltachyon/client/TachyonFile;
+
+  public synchronized tachyon.client.TachyonFile getFile(java.lang.String, boolean) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Z)Ltachyon/client/TachyonFile;
+
+  public synchronized tachyon.client.TachyonFile getFile(tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Z)Ltachyon/client/TachyonFile;
+
+  public synchronized java.util.List<tachyon.thrift.ClientBlockInfo> getFileBlocks(int) throws java.io.IOException;
+    Signature: (I)Ljava/util/List;
+
+  public synchronized int getFileId(tachyon.TachyonURI);
+    Signature: (Ltachyon/TachyonURI;)I
+
+  public synchronized tachyon.thrift.ClientFileInfo getFileStatus(int, tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;Z)Ltachyon/thrift/ClientFileInfo;
+
+  public tachyon.thrift.ClientFileInfo getFileStatus(int, tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;)Ltachyon/thrift/ClientFileInfo;
+
+  public synchronized tachyon.thrift.ClientFileInfo getFileStatus(int, boolean) throws java.io.IOException;
+    Signature: (IZ)Ltachyon/thrift/ClientFileInfo;
+
+  public synchronized java.lang.String getLocalBlockTemporaryPath(long, long) throws java.io.IOException;
+    Signature: (JJ)Ljava/lang/String;
+
+  public synchronized tachyon.client.table.RawTable getRawTable(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/client/table/RawTable;
+
+  public synchronized tachyon.client.table.RawTable getRawTable(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Ltachyon/client/table/RawTable;
+
+  public synchronized java.lang.String getUfsAddress() throws java.io.IOException;
+    Signature: ()Ljava/lang/String;
+
+  public synchronized tachyon.TachyonURI getUri();
+    Signature: ()Ltachyon/TachyonURI;
+
+  long getUserId() throws java.io.IOException;
+    Signature: ()J
+
+  public synchronized java.util.List<tachyon.thrift.ClientWorkerInfo> getWorkersInfo() throws java.io.IOException;
+    Signature: ()Ljava/util/List;
+
+  public synchronized boolean hasLocalWorker() throws java.io.IOException;
+    Signature: ()Z
+
+  public synchronized boolean isConnected();
+    Signature: ()Z
+
+  synchronized boolean isDirectory(int);
+    Signature: (I)Z
+
+  public synchronized java.util.List<tachyon.thrift.ClientFileInfo> listStatus(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Ljava/util/List;
+
+  synchronized java.lang.String lockBlock(long, int) throws java.io.IOException;
+    Signature: (JI)Ljava/lang/String;
+
+  public synchronized boolean mkdirs(tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Z)Z
+
+  public synchronized void pinFile(int) throws java.io.IOException;
+    Signature: (I)V
+
+  public synchronized boolean freepath(int, tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;Z)Z
+
+  public synchronized boolean promoteBlock(long) throws java.io.IOException;
+    Signature: (J)Z
+
+  public synchronized boolean rename(int, tachyon.TachyonURI, tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;Ltachyon/TachyonURI;)Z
+
+  public synchronized void reportLostFile(int) throws java.io.IOException;
+    Signature: (I)V
+
+  public synchronized void requestFilesInDependency(int) throws java.io.IOException;
+    Signature: (I)V
+
+  public synchronized long requestSpace(long, long) throws java.io.IOException;
+    Signature: (JJ)J
+
+  public synchronized void setPinned(int, boolean) throws java.io.IOException;
+    Signature: (IZ)V
+
+  public java.lang.String toString();
+    Signature: ()Ljava/lang/String;
+
+  synchronized boolean unlockBlock(long, int) throws java.io.IOException;
+    Signature: (JI)Z
+
+  public synchronized void unpinFile(int) throws java.io.IOException;
+    Signature: (I)V
+
+  public synchronized void updateRawTableMetadata(int, java.nio.ByteBuffer) throws java.io.IOException;
+    Signature: (ILjava/nio/ByteBuffer;)V
+
+  public boolean freepath(tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Z)Z
+
+  public boolean rename(tachyon.TachyonURI, tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Ltachyon/TachyonURI;)Z
+
+  public boolean rename(int, tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (ILtachyon/TachyonURI;)Z
+
+  public boolean mkdir(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Z
+
+  public boolean delete(tachyon.TachyonURI, boolean) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Z)Z
+
+  public boolean delete(int, boolean) throws java.io.IOException;
+    Signature: (IZ)Z
+
+  public int createFile(tachyon.TachyonURI, tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;Ltachyon/TachyonURI;)I
+
+  public int createFile(tachyon.TachyonURI, long) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;J)I
+
+  public int createFile(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)I
+
+  static {};
+    Signature: ()V
+}

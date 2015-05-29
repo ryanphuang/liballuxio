@@ -17,14 +17,14 @@ TARGETS := libtachyon.so tachyontest
 
 all: $(TARGETS)
 
-libtachyon.so: tachyon.c util.c jni_helper.c tachyon.h util.h jni_helper.h
+libtachyon.so: Tachyon.cc Util.cc JNIHelper.cc Tachyon.h Util.h JNIHelper.h
 	$(CXX) -o $@ -shared -fPIC $(CXXFLAGS) $<
 
-tachyontest: tachyontest.o libtachyon.so
+tachyontest: TachyonTest.o libtachyon.so
 	$(CXX) $(LDFLAGS) $< -o $@
 
-tachyontest.o: tachyontest.c tachyon.h
-	$(CXX) $(CXXFLAGS) -c tachyontest.c
+TachyonTest.o: TachyonTest.cc Tachyon.h
+	$(CXX) $(CXXFLAGS) -c TachyonTest.cc
 
 clean:
 	rm -f *.o $(TARGETS)

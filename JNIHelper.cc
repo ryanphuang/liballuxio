@@ -1,5 +1,6 @@
-#include "jni_helper.h"
+#include "JNIHelper.h"
 
+JNIEnv* globalEnv = NULL;
 
 // Create a JNI env. 
 //
@@ -40,6 +41,21 @@ JNIEnv* createJNIEnv()
     die("fail to create JVM");
   }
   return env;
+}
+
+// TODO: not thread-safe
+JNIEnv* getJNIEnv()
+{
+  if (globalEnv == NULL) {
+    globalEnv = createJNIEnv();
+  }
+  return globalEnv;
+}
+
+jthrowable callMethod(JNIEnv *env, jobject obj)
+{
+
+
 }
 
 /* vim: set ts=4 sw=4 : */

@@ -1,0 +1,5 @@
+.*.swp
+*.o
+tachyontest
+libtachyon.so
+

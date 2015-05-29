@@ -1,6 +1,14 @@
 #include "JNIHelper.h"
+#include "Util.h"
+
+#include <map>
 
 JNIEnv* globalEnv = NULL;
+
+typedef std::map<const char *, void *> HashMap;
+typedef std::map<const char *, void *>::iterator KVPair;
+
+HashMap globalClsMap;
 
 // Create a JNI env. 
 //
@@ -35,7 +43,7 @@ JNIEnv* createJNIEnv()
   err = JNI_CreateJavaVM(&jvm, (void **) env, &args);
 
   // before checking return value, we should free the allocated string
-  free(classpath_arg)
+  free(classpath_arg);
 
   if (err != 0) {
     die("fail to create JVM");
@@ -52,10 +60,19 @@ JNIEnv* getJNIEnv()
   return globalEnv;
 }
 
+jthrowable findClass(JNIEnv *env, const char *className, jclass *cls)
+{
+  jthrowable exception = NULL;
+  KVPair pair = globalClsMap.find(className);
+
+  return exception;
+}
+
 jthrowable callMethod(JNIEnv *env, jobject obj)
 {
+  jthrowable exception = NULL;
 
-
+  return exception;
 }
 
 /* vim: set ts=4 sw=4 : */

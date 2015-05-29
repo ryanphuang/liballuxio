@@ -1,3 +1,11 @@
+/**
+ *  @author        Ryan Huang <ryanhuang@cs.ucsd.edu>
+ *  @organization  University of California, San Diego
+ * 
+ * Tachyon C/C++ APIs
+ *
+ */
+
 #ifndef __TACHYON_H_
 #define __TACHYON_H_
 

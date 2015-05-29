@@ -15,18 +15,26 @@ LDFLAGS := $(JAVA_LDS)
 
 TARGETS := libtachyon.so tachyontest
 
+OBJS := Tachyon.o Util.o JNIHelper.o
+DEPS := $(OBJS:.o=.d)
+
 all: $(TARGETS)
 
-libtachyon.so: Tachyon.cc Util.cc JNIHelper.cc Tachyon.h Util.h JNIHelper.h
-	$(CXX) -o $@ -shared -fPIC $(CXXFLAGS) $<
+libtachyon.so: $(OBJS)
+	$(CXX) -o $@ -shared -fPIC $(CXXFLAGS) $^
+
+-include $(DEPS)
+
+%.o :%.cc
+	$(CXX) -MMD -c -fPIC $(CXXFLAGS) $< -o $@
 
 tachyontest: TachyonTest.o libtachyon.so
 	$(CXX) $(LDFLAGS) $< -o $@
 
 TachyonTest.o: TachyonTest.cc Tachyon.h
-	$(CXX) $(CXXFLAGS) -c TachyonTest.cc
+	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
-	rm -f *.o $(TARGETS)
+	rm -f *.o *.d $(TARGETS)
 
 .PHONY: all clean

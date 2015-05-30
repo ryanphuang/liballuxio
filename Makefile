@@ -1,7 +1,11 @@
 
+###-Platform dependent settings-###
+
 OS_ARCH = amd64
 PLATFORM = linux
 JAVA_HOME = /usr/lib/jvm/java-7-openjdk-amd64
+
+###-Customize the above if necessary-###
 
 JAVA_INCLUDES := -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
 JAVA_LDS := -L$(JAVA_HOME)/jre/lib/$(OS_ARCH)/server -ljvm

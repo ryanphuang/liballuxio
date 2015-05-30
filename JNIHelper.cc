@@ -135,9 +135,16 @@ jthrowable getClass(JNIEnv *env, jclass *clsOut, const char *className)
       // still can't find from env
       exception = getAndClearException(env);
     } else {
-      // find in env, update cache
-      mapPut(globalClsMap, className, cls);
-      *clsOut = cls;
+      // find in env, first create a global reference (otherwise, the reference will be
+      // can be dangling), then update cache
+      jclass globalCls = (jclass) env->NewGlobalRef(cls);
+      if (globalCls == NULL) {
+        exception = getAndClearException(env);
+      } else {
+        mapPut(globalClsMap, className, globalCls);
+        *clsOut = globalCls;
+        env->DeleteLocalRef(cls); // delete local reference
+      }
     }
   }
   return exception;

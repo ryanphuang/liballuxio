@@ -29,7 +29,7 @@ libtachyon.so: $(OBJS)
 	$(CXX) -MMD -c -fPIC $(CXXFLAGS) $< -o $@
 
 tachyontest: TachyonTest.o libtachyon.so
-	$(CXX) $(LDFLAGS) $< -o $@
+	$(CXX) $(LDFLAGS) $^ -o $@
 
 TachyonTest.o: TachyonTest.cc Tachyon.h
 	$(CXX) $(CXXFLAGS) -c $<

@@ -12,7 +12,7 @@
 
 int main()
 {
-  TachyonClient client = createClient("localhost:19998");
+  TachyonClient client = createClient("tachyon://localhost:19998");
   if (client == NULL) {
     printf("fail to create tachyon client\n");
   }

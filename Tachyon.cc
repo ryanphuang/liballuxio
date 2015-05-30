@@ -33,6 +33,8 @@ TachyonClient createClient(const char *masterAddr)
     tfs = env->NewGlobalRef(ret.l);
     env->DeleteLocalRef(ret.l);
   } else {
+    serror("fail to call TachyonFS get");
+    printException(env, exception);
     tfs = NULL;
   }
   env->DeleteLocalRef(jPathStr); 

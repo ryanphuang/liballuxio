@@ -188,10 +188,32 @@ bool getMethodRetType(char * rettOut, const char *methodSignature)
   return true;
 }
 
-void printException(jthrowable exception)
+void printException(JNIEnv *env, jthrowable exception)
 {
-  //TODO: print real exception
-  printf("exception\n");
+  jclass cls;
+  jclass basecls;
+  jobject obj;
+  jmethodID mid;
+
+  jstring jClsName;
+  jstring jMsg;
+
+  cls = env->GetObjectClass(exception);
+  mid = env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
+  obj = env->CallObjectMethod(exception, mid);
+  basecls = env->GetObjectClass(obj);
+  mid = env->GetMethodID(basecls, "getName", "()Ljava/lang/String;");
+  jClsName = (jstring) env->CallObjectMethod(obj, mid);
+
+  mid = env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
+  jMsg = (jstring) env->CallObjectMethod(exception, mid);
+
+  const char *clsName = env->GetStringUTFChars(jClsName, 0);
+  const char *msg = env->GetStringUTFChars(jMsg, 0); 
+
+  printf("exception in %s: %s\n", clsName, msg);
+  env->ReleaseStringUTFChars(jClsName, clsName); 
+  env->ReleaseStringUTFChars(jMsg, msg); 
 }
 
 jthrowable callMethod(JNIEnv *env, jvalue *retOut, jobject obj, 

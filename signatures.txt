@@ -209,3 +209,115 @@ public class tachyon.client.TachyonFS extends tachyon.client.AbstractTachyonFS {
   static {};
     Signature: ()V
 }
+
+Compiled from "TachyonFile.java"
+public class tachyon.client.TachyonFile implements java.lang.Comparable<tachyon.client.TachyonFile> {
+  final tachyon.client.TachyonFS mTachyonFS;
+    Signature: Ltachyon/client/TachyonFS;
+  final int mFileId;
+    Signature: I
+  tachyon.client.TachyonFile(tachyon.client.TachyonFS, int);
+    Signature: (Ltachyon/client/TachyonFS;I)V
+
+  public int compareTo(tachyon.client.TachyonFile);
+    Signature: (Ltachyon/client/TachyonFile;)I
+
+  public boolean equals(java.lang.Object);
+    Signature: (Ljava/lang/Object;)Z
+
+  public long getBlockId(int) throws java.io.IOException;
+    Signature: (I)J
+
+  long getBlockIdBasedOnOffset(long) throws java.io.IOException;
+    Signature: (J)J
+
+  public long getBlockSizeByte() throws java.io.IOException;
+    Signature: ()J
+
+  public synchronized tachyon.thrift.ClientBlockInfo getClientBlockInfo(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/thrift/ClientBlockInfo;
+
+  public long getCreationTimeMs() throws java.io.IOException;
+    Signature: ()J
+
+  public int getDiskReplication();
+    Signature: ()I
+
+  public tachyon.client.InStream getInStream(tachyon.client.ReadType) throws java.io.IOException;
+    Signature: (Ltachyon/client/ReadType;)Ltachyon/client/InStream;
+
+  public java.lang.String getLocalFilename(int) throws java.io.IOException;
+    Signature: (I)Ljava/lang/String;
+
+  public java.util.List<java.lang.String> getLocationHosts() throws java.io.IOException;
+    Signature: ()Ljava/util/List;
+
+  public int getNumberOfBlocks() throws java.io.IOException;
+    Signature: ()I
+
+  public tachyon.client.OutStream getOutStream(tachyon.client.WriteType) throws java.io.IOException;
+    Signature: (Ltachyon/client/WriteType;)Ltachyon/client/OutStream;
+
+  public java.lang.String getPath() throws java.io.IOException;
+    Signature: ()Ljava/lang/String;
+
+  public java.lang.Object getUFSConf();
+    Signature: ()Ljava/lang/Object;
+
+  java.lang.String getUfsPath() throws java.io.IOException;
+    Signature: ()Ljava/lang/String;
+
+  public int hashCode();
+    Signature: ()I
+
+  public boolean isComplete() throws java.io.IOException;
+    Signature: ()Z
+
+  public boolean isDirectory() throws java.io.IOException;
+    Signature: ()Z
+
+  public boolean isFile() throws java.io.IOException;
+    Signature: ()Z
+
+  public boolean isInMemory() throws java.io.IOException;
+    Signature: ()Z
+
+  public long length() throws java.io.IOException;
+    Signature: ()J
+
+  public boolean needPin() throws java.io.IOException;
+    Signature: ()Z
+
+  public boolean promoteBlock(int) throws java.io.IOException;
+    Signature: (I)Z
+
+  public tachyon.client.TachyonByteBuffer readByteBuffer(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/client/TachyonByteBuffer;
+
+  tachyon.client.TachyonByteBuffer readLocalByteBuffer(int) throws java.io.IOException;
+    Signature: (I)Ltachyon/client/TachyonByteBuffer;
+
+  tachyon.client.TachyonByteBuffer readRemoteByteBuffer(tachyon.thrift.ClientBlockInfo);
+    Signature: (Ltachyon/thrift/ClientBlockInfo;)Ltachyon/client/TachyonByteBuffer;
+
+  public boolean recache() throws java.io.IOException;
+    Signature: ()Z
+
+  boolean recache(int) throws java.io.IOException;
+    Signature: (I)Z
+
+  public boolean rename(tachyon.TachyonURI) throws java.io.IOException;
+    Signature: (Ltachyon/TachyonURI;)Z
+
+  public void setUFSConf(java.lang.Object);
+    Signature: (Ljava/lang/Object;)V
+
+  public java.lang.String toString();
+    Signature: ()Ljava/lang/String;
+
+  public int compareTo(java.lang.Object);
+    Signature: (Ljava/lang/Object;)I
+
+  static {};
+    Signature: ()V
+}

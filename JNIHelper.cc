@@ -9,6 +9,7 @@
 #include "JNIHelper.h"
 #include "Util.h"
 
+#include <stdio.h>
 #include <map>
 
 JNIEnv* globalEnv = NULL;
@@ -185,6 +186,12 @@ bool getMethodRetType(char * rettOut, const char *methodSignature)
   }
   *rettOut = t;
   return true;
+}
+
+void printException(jthrowable exception)
+{
+  //TODO: print real exception
+  printf("exception\n");
 }
 
 jthrowable callMethod(JNIEnv *env, jvalue *retOut, jobject obj, 

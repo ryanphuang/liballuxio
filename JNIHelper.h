@@ -16,6 +16,8 @@
 
 #define CTORNAME "<init>"
 
+#define JTHROWABLE_CLS "java/lang/Throwable"
+
 // jvm type signature
 // reference: http://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/types.html#wp9502
 
@@ -58,7 +60,11 @@ jthrowable getAndClearException(JNIEnv *env);
 jthrowable newClassObject(JNIEnv *env, jobject *objOut, const char *className,
                 const char *ctorSignature, ...);
 
+// get a method's return type based on the signature
 bool getMethodRetType(char * rettOut, const char *methodSignature);
+
+// print java throwable exception
+void printException(JNIEnv *env, jthrowable exception);
 
 // invoke a method of a java class
 jthrowable callMethod(JNIEnv *env, jvalue *retOut, jobject obj, 

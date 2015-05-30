@@ -13,13 +13,15 @@
 extern "C" {
 #endif
 
-typedef struct TachyonFS {
+#define TFS_CLS               "tachyon/client/TachyonFS"
+#define TFS_GET_NAME          "get"
 
+typedef struct TachyonFS {
 } TachyonFS;
 
 typedef TachyonFS* TachyonClient;
 
-TachyonClient createClient(const char *masterHost, const char *masterPort);
+TachyonClient createClient(const char *masterAddr);
 int createFile(TachyonClient client, const char * path);
 
 

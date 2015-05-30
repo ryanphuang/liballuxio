@@ -14,9 +14,11 @@ extern "C" {
 #endif
 
 // print error message
-#define warn(format, ...) do { \
+#define verror(format, ...) do { \
     fprintf(stderr, format,  __VA_ARGS__); \
 } while (0)
+
+#define serror(msg)  verror("%s\n", msg)
 
 // print error message and exit
 void die(const char *, ...) __attribute__ ((noreturn, format (printf, 1, 2)));

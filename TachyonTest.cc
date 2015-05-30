@@ -10,18 +10,37 @@
 #include "Util.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
-// replace the address with actual address
-const char *masterAddr = "tachyon://localhost:19998";
-const char *filePath = "tachyon://localhost:19998/README.txt/README.txt";
+const char *masterUri;
+const char *filePath;
 
-int main()
+const char * program_name;
+
+void usage()
 {
-  jTachyonClient client = TachyonClient::createClient(masterAddr);
+  fprintf(stderr, "\n\tUsage: %s masterUri testFilePath\n\n", program_name);
+}
+
+int main(int argc, char*argv[])
+{
+  program_name = argv[0];
+  if (argc != 3) {
+    usage();
+    exit(1);
+  }
+  masterUri = argv[1];
+  filePath = argv[2];
+
+  char * fullFilePath = fullTachyonPath(masterUri, filePath);
+
+  printf("full file path: %s\n", fullFilePath);
+
+  jTachyonClient client = TachyonClient::createClient(masterUri);
   if (client == NULL) {
     die("fail to create tachyon client\n");
   }
-  jTachyonFile file = client->getFile(filePath);
+  jTachyonFile file = client->getFile(fullFilePath);
   if (file == NULL) {
     die("fail to get tachyon file\n");
   }

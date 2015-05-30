@@ -10,7 +10,10 @@
 #include "Util.h"
 #include "JNIHelper.h"
 
-jTachyonClient TachyonClient::createClient(const char *masterAddr)
+#include <string.h>
+#include <stdlib.h>
+
+jTachyonClient TachyonClient::createClient(const char *masterUri)
 {
   JNIEnv *env = getJNIEnv();
   if (env == NULL) {
@@ -21,7 +24,7 @@ jTachyonClient TachyonClient::createClient(const char *masterAddr)
   jvalue ret;
   jobject tfs;
   
-  jstring jPathStr = env->NewStringUTF(masterAddr);
+  jstring jPathStr = env->NewStringUTF(masterUri);
   if (jPathStr == NULL) {
     serror("fail to allocate path string");
     return NULL;
@@ -95,6 +98,43 @@ long TachyonFile::length()
     serror("fail to call TachyonFile.length()");
     return -1;
   }
+}
+
+char* fullTachyonPath(const char *masterUri, const char *filePath)
+{
+  size_t mlen, flen, nlen;
+  bool slash;
+  char *fullPath;
+
+  mlen = strlen(masterUri);
+  flen = strlen(filePath);
+  if (mlen == 0 || flen == 0) {
+    return NULL;
+  }
+  if (flen >= mlen) {
+    if (strncmp(masterUri, filePath, mlen) == 0) {
+      // it's already a full path
+      fullPath = (char *) malloc((flen + 1) * sizeof(char));
+      if (fullPath != NULL) {
+        strncpy(fullPath, filePath, flen);
+        fullPath[flen] = '\0';
+      }
+      return fullPath;
+    }
+  }
+  slash = (masterUri[mlen - 1] == '/' || filePath[flen - 1] != '/');
+  if (slash)
+    nlen = mlen + flen + 1;
+  else
+    nlen = mlen + flen + 2; // need to insert a slash
+  fullPath = (char *) malloc(nlen * sizeof(char));
+  if (fullPath != NULL) {
+    if (slash)
+      snprintf(fullPath, nlen, "%s%s", masterUri, filePath);
+    else
+      snprintf(fullPath, nlen, "%s/%s", masterUri, filePath);
+  }
+  return fullPath;
 }
 
 /* vim: set ts=4 sw=4 : */

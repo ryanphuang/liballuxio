@@ -11,10 +11,6 @@
 
 #include<jni.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define TFS_CLS                     "tachyon/client/TachyonFS"
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
@@ -32,7 +28,7 @@ typedef TachyonFile* jTachyonFile;
 class TachyonClient {
 
   public:
-    static jTachyonClient createClient(const char *masterAddr);
+    static jTachyonClient createClient(const char *masterUri);
     jTachyonFile getFile(const char *path);
     int createFile(const char *path);
 
@@ -56,6 +52,13 @@ class TachyonFile {
     jobject m_tfile;
 };
 
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+char* fullTachyonPath(const char *masterUri, const char *filePath);
 
 #ifdef __cplusplus
 }

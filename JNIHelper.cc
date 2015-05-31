@@ -10,6 +10,8 @@
 #include "Util.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <map>
 
 JNIEnv* globalEnv = NULL;
@@ -180,6 +182,60 @@ jthrowable newClassObject(JNIEnv *env, jobject *objOut, const char *className,
     exception = NULL;
   }
   return exception;
+}
+
+jthrowable getEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
+                const char * valueName)
+{
+  jthrowable exception;
+  jclass cls;
+  jfieldID jid;
+  jobject obj;
+
+  char clsSignature[MAX_CLS_SIG];
+  int sn;
+
+  exception = getClass(env, &cls, className);
+  if (exception != NULL)
+    return exception;
+  sn = snprintf(clsSignature, MAX_CLS_SIG, "L%s;", className);
+  if (sn >= MAX_CLS_SIG)
+    return newRuntimeException(env, "class name too long");
+
+  jid = env->GetStaticFieldID(cls, valueName, clsSignature);
+  if (jid == 0)
+    return getAndClearException(env);
+
+  obj = env->GetStaticObjectField(cls, jid);
+  exception = getAndClearException(env);
+  
+  if (exception == NULL)
+    *objOut = obj;
+  return exception;
+}
+
+jthrowable mapEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
+                int ord)
+{
+  return NULL;
+}
+
+jthrowable newRuntimeException(JNIEnv *env, const char *message)
+{
+  jthrowable exception;
+  jstring jmsg;
+  jobject rteObj;
+
+  jmsg = env->NewStringUTF(message);
+  if (jmsg == NULL)
+    return getAndClearException(env);
+
+  exception = newClassObject(env, &rteObj, JRUNTIMEEXCEPT_CLS, 
+                JRUNTIMEEXCEPT_CTOR, jmsg);
+  if (exception != NULL)
+    return exception;
+  env->DeleteLocalRef(jmsg);
+  return (jthrowable) rteObj;
 }
 
 bool getMethodRetType(char * rettOut, const char *methodSignature)

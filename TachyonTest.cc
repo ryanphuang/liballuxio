@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+using namespace tachyon;
+
 const char *masterUri;
 const char *filePath;
 

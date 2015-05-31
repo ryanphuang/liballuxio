@@ -332,3 +332,204 @@ public class tachyon.client.TachyonByteBuffer implements java.io.Closeable {
   public synchronized void close() throws java.io.IOException;
     Signature: ()V
 }
+Compiled from "ByteBuffer.java"
+public abstract class java.nio.ByteBuffer extends java.nio.Buffer implements java.lang.Comparable<java.nio.ByteBuffer> {
+  final byte[] hb;
+    Signature: [B
+  final int offset;
+    Signature: I
+  boolean isReadOnly;
+    Signature: Z
+  boolean bigEndian;
+    Signature: Z
+  boolean nativeByteOrder;
+    Signature: Z
+  java.nio.ByteBuffer(int, int, int, int, byte[], int);
+    Signature: (IIII[BI)V
+
+  java.nio.ByteBuffer(int, int, int, int);
+    Signature: (IIII)V
+
+  public static java.nio.ByteBuffer allocateDirect(int);
+    Signature: (I)Ljava/nio/ByteBuffer;
+
+  public static java.nio.ByteBuffer allocate(int);
+    Signature: (I)Ljava/nio/ByteBuffer;
+
+  public static java.nio.ByteBuffer wrap(byte[], int, int);
+    Signature: ([BII)Ljava/nio/ByteBuffer;
+
+  public static java.nio.ByteBuffer wrap(byte[]);
+    Signature: ([B)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.ByteBuffer slice();
+    Signature: ()Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.ByteBuffer duplicate();
+    Signature: ()Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.ByteBuffer asReadOnlyBuffer();
+    Signature: ()Ljava/nio/ByteBuffer;
+
+  public abstract byte get();
+    Signature: ()B
+
+  public abstract java.nio.ByteBuffer put(byte);
+    Signature: (B)Ljava/nio/ByteBuffer;
+
+  public abstract byte get(int);
+    Signature: (I)B
+
+  public abstract java.nio.ByteBuffer put(int, byte);
+    Signature: (IB)Ljava/nio/ByteBuffer;
+
+  public java.nio.ByteBuffer get(byte[], int, int);
+    Signature: ([BII)Ljava/nio/ByteBuffer;
+
+  public java.nio.ByteBuffer get(byte[]);
+    Signature: ([B)Ljava/nio/ByteBuffer;
+
+  public java.nio.ByteBuffer put(java.nio.ByteBuffer);
+    Signature: (Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;
+
+  public java.nio.ByteBuffer put(byte[], int, int);
+    Signature: ([BII)Ljava/nio/ByteBuffer;
+
+  public final java.nio.ByteBuffer put(byte[]);
+    Signature: ([B)Ljava/nio/ByteBuffer;
+
+  public final boolean hasArray();
+    Signature: ()Z
+
+  public final byte[] array();
+    Signature: ()[B
+
+  public final int arrayOffset();
+    Signature: ()I
+
+  public abstract java.nio.ByteBuffer compact();
+    Signature: ()Ljava/nio/ByteBuffer;
+
+  public abstract boolean isDirect();
+    Signature: ()Z
+
+  public java.lang.String toString();
+    Signature: ()Ljava/lang/String;
+
+  public int hashCode();
+    Signature: ()I
+
+  public boolean equals(java.lang.Object);
+    Signature: (Ljava/lang/Object;)Z
+
+  public int compareTo(java.nio.ByteBuffer);
+    Signature: (Ljava/nio/ByteBuffer;)I
+
+  public final java.nio.ByteOrder order();
+    Signature: ()Ljava/nio/ByteOrder;
+
+  public final java.nio.ByteBuffer order(java.nio.ByteOrder);
+    Signature: (Ljava/nio/ByteOrder;)Ljava/nio/ByteBuffer;
+
+  abstract byte _get(int);
+    Signature: (I)B
+
+  abstract void _put(int, byte);
+    Signature: (IB)V
+
+  public abstract char getChar();
+    Signature: ()C
+
+  public abstract java.nio.ByteBuffer putChar(char);
+    Signature: (C)Ljava/nio/ByteBuffer;
+
+  public abstract char getChar(int);
+    Signature: (I)C
+
+  public abstract java.nio.ByteBuffer putChar(int, char);
+    Signature: (IC)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.CharBuffer asCharBuffer();
+    Signature: ()Ljava/nio/CharBuffer;
+
+  public abstract short getShort();
+    Signature: ()S
+
+  public abstract java.nio.ByteBuffer putShort(short);
+    Signature: (S)Ljava/nio/ByteBuffer;
+
+  public abstract short getShort(int);
+    Signature: (I)S
+
+  public abstract java.nio.ByteBuffer putShort(int, short);
+    Signature: (IS)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.ShortBuffer asShortBuffer();
+    Signature: ()Ljava/nio/ShortBuffer;
+
+  public abstract int getInt();
+    Signature: ()I
+
+  public abstract java.nio.ByteBuffer putInt(int);
+    Signature: (I)Ljava/nio/ByteBuffer;
+
+  public abstract int getInt(int);
+    Signature: (I)I
+
+  public abstract java.nio.ByteBuffer putInt(int, int);
+    Signature: (II)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.IntBuffer asIntBuffer();
+    Signature: ()Ljava/nio/IntBuffer;
+
+  public abstract long getLong();
+    Signature: ()J
+
+  public abstract java.nio.ByteBuffer putLong(long);
+    Signature: (J)Ljava/nio/ByteBuffer;
+
+  public abstract long getLong(int);
+    Signature: (I)J
+
+  public abstract java.nio.ByteBuffer putLong(int, long);
+    Signature: (IJ)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.LongBuffer asLongBuffer();
+    Signature: ()Ljava/nio/LongBuffer;
+
+  public abstract float getFloat();
+    Signature: ()F
+
+  public abstract java.nio.ByteBuffer putFloat(float);
+    Signature: (F)Ljava/nio/ByteBuffer;
+
+  public abstract float getFloat(int);
+    Signature: (I)F
+
+  public abstract java.nio.ByteBuffer putFloat(int, float);
+    Signature: (IF)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.FloatBuffer asFloatBuffer();
+    Signature: ()Ljava/nio/FloatBuffer;
+
+  public abstract double getDouble();
+    Signature: ()D
+
+  public abstract java.nio.ByteBuffer putDouble(double);
+    Signature: (D)Ljava/nio/ByteBuffer;
+
+  public abstract double getDouble(int);
+    Signature: (I)D
+
+  public abstract java.nio.ByteBuffer putDouble(int, double);
+    Signature: (ID)Ljava/nio/ByteBuffer;
+
+  public abstract java.nio.DoubleBuffer asDoubleBuffer();
+    Signature: ()Ljava/nio/DoubleBuffer;
+
+  public java.lang.Object array();
+    Signature: ()Ljava/lang/Object;
+
+  public int compareTo(java.lang.Object);
+    Signature: (Ljava/lang/Object;)I
+}

@@ -19,17 +19,37 @@
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
 #define TFILE_RBB_METHD             "readByteBuffer"
+#define TFILE_GIS_METHD             "getInStream"
 
-class ByteBuffer;
+#define TBBUF_CLS                   "tachyon/client/TachyonByteBuffer"
+#define TBBUF_CLOSE_METHD           "close"
+
+#define TREADT_CLS                  "tachyon/client/ReadType"
+
+#define BBUF_CLS                    "java/nio/ByteBuffer"
+#define BBUF_ALLOC_METHD            "allocate"
+
+namespace tachyon {
+
+enum ReadType {
+  NO_CACHE,
+  CACHE,
+  CACHE_PROMOTE,
+};
+
 class TachyonClient;
 class TachyonFile;
 class TachyonByteBuffer;
 
-typedef ByteBuffer* jByteBuffer;
+class ByteBuffer;
+class InStream;
 
 typedef TachyonClient* jTachyonClient;
 typedef TachyonFile* jTachyonFile;
 typedef TachyonByteBuffer* jTachyonByteBuffer;
+
+typedef ByteBuffer* jByteBuffer;
+typedef InStream* jInStream;
 
 class JNIObjBase {
   public:
@@ -68,6 +88,7 @@ class TachyonFile : public JNIObjBase {
     
     long length();
     jTachyonByteBuffer readByteBuffer(int blockIndex);
+    jInStream getInStream(ReadType readType);
 
 };
 
@@ -84,14 +105,23 @@ class ByteBuffer : public JNIObjBase {
   public:
     ByteBuffer(JNIEnv *env, jobject bbuf): JNIObjBase(env, bbuf){}
 
+    static jByteBuffer allocate(int capacity);
+};
+
+class InStream : public JNIObjBase {
+  public:
+    InStream(JNIEnv *env, jobject istream): JNIObjBase(env, istream){}
+
 };
 
 
+} // namespace tachyon
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, tachyon::ReadType readType);
 char* fullTachyonPath(const char *masterUri, const char *filePath);
 
 #ifdef __cplusplus

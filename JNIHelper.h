@@ -17,6 +17,11 @@
 #define CTORNAME "<init>"
 
 #define JTHROWABLE_CLS "java/lang/Throwable"
+#define JRUNTIMEEXCEPT_CLS "RuntimeException"
+
+#define JRUNTIMEEXCEPT_CTOR "(java/lang/String;)V"
+
+#define MAX_CLS_SIG 256
 
 // jvm type signature
 // reference: http://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/types.html#wp9502
@@ -59,6 +64,18 @@ jthrowable getAndClearException(JNIEnv *env);
 // create a new object for a class
 jthrowable newClassObject(JNIEnv *env, jobject *objOut, const char *className,
                 const char *ctorSignature, ...);
+
+// get the jobject for a enum value
+jthrowable getEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
+                const char * valueName);
+
+// map the enum value in C to the enum object in java.
+// the C enum and Java enum need to obey the same order
+jthrowable mapEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
+                int ord);
+
+// create a runtime exception
+jthrowable newRuntimeException(JNIEnv *env, const char *message);
 
 // get a method's return type based on the signature
 bool getMethodRetType(char * rettOut, const char *methodSignature);

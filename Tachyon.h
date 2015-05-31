@@ -18,14 +18,38 @@
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
+#define TFILE_RBB_METHD             "readByteBuffer"
 
+class ByteBuffer;
 class TachyonClient;
 class TachyonFile;
+class TachyonByteBuffer;
+
+typedef ByteBuffer* jByteBuffer;
 
 typedef TachyonClient* jTachyonClient;
 typedef TachyonFile* jTachyonFile;
+typedef TachyonByteBuffer* jTachyonByteBuffer;
 
-class TachyonClient {
+class JNIObjBase {
+  public:
+    JNIObjBase(JNIEnv * env, jobject localObj) {
+      m_env = env;
+      m_obj = env->NewGlobalRef(localObj);
+      // this means after the constructor, the localObj will be destroyed
+      env->DeleteLocalRef(localObj);
+    }
+
+    ~JNIObjBase() {
+      m_env->DeleteGlobalRef(m_obj);
+    }
+
+  protected:
+    JNIEnv *m_env;
+    jobject m_obj; // the underlying jobject
+};
+
+class TachyonClient : public JNIObjBase {
 
   public:
     static jTachyonClient createClient(const char *masterUri);
@@ -34,22 +58,32 @@ class TachyonClient {
 
   private:
     // hide constructor, must be instantiated using createClient method
-    TachyonClient(jobject tfs) : m_tfs(tfs) {}
+    TachyonClient(JNIEnv *env, jobject tfs) : JNIObjBase(env, tfs) {}
 
-    // the underlying jobect to interact with tfs
-    jobject m_tfs;
 };
 
-class TachyonFile {
+class TachyonFile : public JNIObjBase {
   public:
-    TachyonFile(jobject tfile) : m_tfile(tfile){}
+    TachyonFile(JNIEnv *env, jobject tfile) : JNIObjBase(env, tfile){}
     
     long length();
+    jTachyonByteBuffer readByteBuffer(int blockIndex);
 
-  private:
+};
 
-    // the underlying jobect to interact with file
-    jobject m_tfile;
+class TachyonByteBuffer : public JNIObjBase {
+  public:
+    TachyonByteBuffer(JNIEnv *env, jobject tbbuf) : JNIObjBase(env, tbbuf) {}
+
+    jByteBuffer getData();
+    void close();
+
+};
+
+class ByteBuffer : public JNIObjBase {
+  public:
+    ByteBuffer(JNIEnv *env, jobject bbuf): JNIObjBase(env, bbuf){}
+
 };
 
 

@@ -63,6 +63,28 @@ jthrowable newClassObject(JNIEnv *env, jobject *objOut, const char *className,
 // get a method's return type based on the signature
 bool getMethodRetType(char * rettOut, const char *methodSignature);
 
+#define GET_JNI_X_FIELD(R, T) \
+inline jthrowable get##T##Field(JNIEnv *env, R *retOut,                         \
+                                jobject obj, jfieldID fid)                      \
+{                                                                               \
+  jthrowable exception;                                                         \
+  R ret = env->Get##T##Field(obj, fid);                                         \
+  *retOut = ret;                                                                \
+  exception = getAndClearException(env);                                        \
+  return exception;                                                             \
+}
+
+GET_JNI_X_FIELD(jboolean, Boolean)
+GET_JNI_X_FIELD(jbyte, Byte)
+GET_JNI_X_FIELD(jchar, Char)
+GET_JNI_X_FIELD(jshort, Short)
+GET_JNI_X_FIELD(jint, Int)
+GET_JNI_X_FIELD(jlong, Long)
+GET_JNI_X_FIELD(jdouble, Double)
+GET_JNI_X_FIELD(jobject, Object)
+
+#undef GET_JNI_X_FIELD
+
 // print java throwable exception
 void printException(JNIEnv *env, jthrowable exception);
 
@@ -119,6 +141,8 @@ CALL_STATIC_JNI_X_METHOD(jlong, Long, j)
 CALL_STATIC_JNI_X_METHOD(jfloat, Float, f)
 CALL_STATIC_JNI_X_METHOD(jdouble, Double, d)
 CALL_STATIC_JNI_X_METHOD(jobject, Object, l)
+
+#undef CALL_STATIC_JNI_X_METHOD
 
 // void method is a bit different, define them separately
 inline jthrowable callVoidMethod(JNIEnv *env, jobject obj, jmethodID mid, 

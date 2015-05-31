@@ -22,7 +22,6 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
 
   jthrowable exception;
   jvalue ret;
-  jobject tfs;
   
   jstring jPathStr = env->NewStringUTF(masterUri);
   if (jPathStr == NULL) {
@@ -32,47 +31,35 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
 
   exception = callMethod(env, &ret, NULL, TFS_CLS, TFS_GET_METHD, 
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFS;", true, jPathStr);
-  if (exception == NULL) {
-    tfs = env->NewGlobalRef(ret.l);
-    env->DeleteLocalRef(ret.l);
-  } else {
+  env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
     serror("fail to call TachyonFS.get()");
     printException(env, exception);
-    tfs = NULL;
+    return NULL;
   }
-  env->DeleteLocalRef(jPathStr); 
-  return new TachyonClient(tfs);
+  return new TachyonClient(env, ret.l);
 }
 
 jTachyonFile TachyonClient::getFile(const char * path)
 {
-  JNIEnv *env = getJNIEnv();
-  if (env == NULL) {
-    return NULL;
-  }
-
   jthrowable exception;
   jvalue ret;
-  jobject tfile;
   
-  jstring jPathStr = env->NewStringUTF(path);
+  jstring jPathStr = m_env->NewStringUTF(path);
   if (jPathStr == NULL) {
     serror("fail to allocate path string");
     return NULL;
   }
 
-  exception = callMethod(env, &ret, (jobject) m_tfs, TFS_CLS, TFS_GET_FILE_METHD, 
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFile;", false, jPathStr);
-  if (exception == NULL) {
-    tfile = env->NewGlobalRef(ret.l);
-    env->DeleteLocalRef(ret.l);
-  } else {
+  m_env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
     serror("fail to call TachyonFS.getFile()");
-    printException(env, exception);
-    tfile = NULL;
+    printException(m_env, exception);
+    return NULL;
   }
-  env->DeleteLocalRef(jPathStr); 
-  return new TachyonFile(tfile);
+  return new TachyonFile(m_env, ret.l);
 }
 
 int TachyonClient::createFile(const char * path)
@@ -82,22 +69,59 @@ int TachyonClient::createFile(const char * path)
 
 long TachyonFile::length()
 {
-  JNIEnv *env = getJNIEnv();
-  if (env == NULL) {
-    return NULL;
-  }
-
   jthrowable exception;
   jvalue ret;
   
-  exception = callMethod(env, &ret, (jobject) m_tfile, TFILE_CLS, TFILE_LENGTH_METHD, 
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_LENGTH_METHD, 
                 "()J", false);
-  if (exception == NULL) {
-    return ret.j;
-  } else {
+  if (exception != NULL) {
     serror("fail to call TachyonFile.length()");
+    printException(m_env, exception);
     return -1;
   }
+  return ret.j;
+}
+
+jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_RBB_METHD, 
+                "(I)Ltachyon/client/TachyonByteBuffer;", false, (jint) blockIndex);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.getByteBuffer()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new TachyonByteBuffer(m_env, ret.l);
+}
+
+jByteBuffer TachyonByteBuffer::getData()
+{
+  jthrowable exception;
+  jobject ret;
+  jclass cls;
+  jfieldID fid;
+  
+  cls = m_env->GetObjectClass(m_obj);
+  fid = m_env->GetFieldID(cls, "mData", "Ljava/nio/ByteBuffer;");
+  if (fid == 0) {
+    serror("fail to get field ID of TachyonByteBuffer.mData");
+    return NULL;
+  }
+  ret = m_env->GetObjectField(m_obj, fid);
+  exception = getAndClearException(m_env);
+  if (exception != NULL) {
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new ByteBuffer(m_env, ret);
+}
+
+void TachyonByteBuffer::close()
+{
+
 }
 
 char* fullTachyonPath(const char *masterUri, const char *filePath)

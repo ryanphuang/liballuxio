@@ -321,3 +321,14 @@ public class tachyon.client.TachyonFile implements java.lang.Comparable<tachyon.
   static {};
     Signature: ()V
 }
+
+Compiled from "TachyonByteBuffer.java"
+public class tachyon.client.TachyonByteBuffer implements java.io.Closeable {
+  public final java.nio.ByteBuffer mData;
+    Signature: Ljava/nio/ByteBuffer;
+  tachyon.client.TachyonByteBuffer(tachyon.client.TachyonFS, java.nio.ByteBuffer, long, int);
+    Signature: (Ltachyon/client/TachyonFS;Ljava/nio/ByteBuffer;JI)V
+
+  public synchronized void close() throws java.io.IOException;
+    Signature: ()V
+}

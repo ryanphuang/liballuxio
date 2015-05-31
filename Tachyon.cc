@@ -187,6 +187,11 @@ int InStream::read()
 
 int InStream::read(void *buff, int length)
 {
+  return read(buff, length, 0, length);
+}
+
+int InStream::read(void *buff, int length, int off, int maxLen)
+{
   jthrowable exception;
   jbyteArray jBuf;
   jvalue ret;
@@ -198,8 +203,12 @@ int InStream::read(void *buff, int length)
     return -1;
   }
 
-  exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
-                "([B)I", false, jBuf);
+  if (off < 0 || maxLen <= 0 || length == maxLen)
+    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+                  "([B)I", false, jBuf);
+  else
+    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+                  "([BII)I", false, jBuf, off, maxLen);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
     serror("fail to call InStream.Read()");
@@ -212,6 +221,33 @@ int InStream::read(void *buff, int length)
   }
   m_env->DeleteLocalRef(jBuf);
   return rdSz;
+}
+
+void InStream::close()
+{
+  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_CLOSE_METHD, 
+      "()V", false);
+}
+
+void InStream::seek(long pos)
+{
+  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_SEEK_METHD, 
+      "(J)V", false, (jlong) pos);
+}
+
+long InStream::skip(long n)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, 
+                TINSTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
+  if (exception != NULL) {
+    serror("fail to call InStream.skip()");
+    printException(m_env, exception);
+    return -1;
+  }
+  return ret.j;
 }
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)

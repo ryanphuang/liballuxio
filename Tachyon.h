@@ -28,6 +28,9 @@
 
 #define TINSTREAM_CLS               "tachyon/client/InStream"
 #define TINSTREAM_READ_METHD        "read"
+#define TINSTREAM_CLOSE_METHD       "close"
+#define TINSTREAM_SEEK_METHD        "seek"
+#define TINSTREAM_SKIP_METHD        "skip"
 
 #define BBUF_CLS                    "java/nio/ByteBuffer"
 #define BBUF_ALLOC_METHD            "allocate"
@@ -115,8 +118,12 @@ class InStream : public JNIObjBase {
   public:
     InStream(JNIEnv *env, jobject istream): JNIObjBase(env, istream){}
   
+    void close();
     int read();
     int read(void *buff, int length);
+    int read(void *buff, int length, int off, int maxLen);
+    void seek(long pos);
+    long skip(long n);
 };
 
 

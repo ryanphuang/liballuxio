@@ -57,7 +57,6 @@ int main(int argc, char*argv[])
   }
 
   char buf[512];
-
   int rdSz = istream->read(buf, 511);
   while (rdSz > 0) {
     if (rdSz >= 512) {
@@ -68,6 +67,7 @@ int main(int argc, char*argv[])
     printf("%s", buf);
     rdSz = istream->read(buf, 511);
   }
+  istream->close();
   printf("\n");
   return 0;
 }

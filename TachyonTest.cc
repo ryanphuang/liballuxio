@@ -47,7 +47,28 @@ int main(int argc, char*argv[])
     die("fail to get tachyon file\n");
   }
   long size = file->length();
+  if (size < 0) {
+    die("fail to get tachyon file size\n");
+  }
   printf("got tachyon file, size: %ld\n", size);
+  jInStream istream = file->getInStream(NO_CACHE);
+  if (istream == NULL) {
+    die("fail to get tachyon file instream\n");
+  }
+
+  char buf[512];
+
+  int rdSz = istream->read(buf, 511);
+  while (rdSz > 0) {
+    if (rdSz >= 512) {
+      printf("impossible read size\n");
+      break;
+    }
+    buf[rdSz] = '\0';
+    printf("%s", buf);
+    rdSz = istream->read(buf, 511);
+  }
+  printf("\n");
   return 0;
 }
 

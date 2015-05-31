@@ -170,6 +170,50 @@ jByteBuffer ByteBuffer::allocate(int capacity)
   return new ByteBuffer(env, ret.l);
 }
 
+int InStream::read() 
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+                "()I", false);
+  if (exception != NULL) {
+    serror("fail to call InStream.Read()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.i;
+}
+
+int InStream::read(void *buff, int length)
+{
+  jthrowable exception;
+  jbyteArray jBuf;
+  jvalue ret;
+  int rdSz;
+
+  jBuf = m_env->NewByteArray(length);
+  if (jBuf == NULL) {
+    serror("fail to allocate jByteArray for Instream.Read");
+    return -1;
+  }
+
+  exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+                "([B)I", false, jBuf);
+  if (exception != NULL) {
+    m_env->DeleteLocalRef(jBuf);
+    serror("fail to call InStream.Read()");
+    printException(m_env, exception);
+    return -1;
+  }
+  rdSz = ret.i;
+  if (rdSz > 0) {
+    m_env->GetByteArrayRegion(jBuf, 0, length, (jbyte*) buff);
+  }
+  m_env->DeleteLocalRef(jBuf);
+  return rdSz;
+}
+
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
 {
   const char *valueName;

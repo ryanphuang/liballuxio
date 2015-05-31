@@ -26,6 +26,9 @@
 
 #define TREADT_CLS                  "tachyon/client/ReadType"
 
+#define TINSTREAM_CLS               "tachyon/client/InStream"
+#define TINSTREAM_READ_METHD        "read"
+
 #define BBUF_CLS                    "java/nio/ByteBuffer"
 #define BBUF_ALLOC_METHD            "allocate"
 
@@ -111,7 +114,9 @@ class ByteBuffer : public JNIObjBase {
 class InStream : public JNIObjBase {
   public:
     InStream(JNIEnv *env, jobject istream): JNIObjBase(env, istream){}
-
+  
+    int read();
+    int read(void *buff, int length);
 };
 
 

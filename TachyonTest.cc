@@ -51,6 +51,12 @@ int main(int argc, char*argv[])
     die("fail to get tachyon file size\n");
   }
   printf("got tachyon file, size: %ld\n", size);
+  if (file->isFile() == true) {
+    printf("Is a regular file\n");
+  } else {
+    printf("Not a regular file\n");
+  }
+  
   jInStream istream = file->getInStream(NO_CACHE);
   if (istream == NULL) {
     die("fail to get tachyon file instream\n");

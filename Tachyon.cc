@@ -84,6 +84,21 @@ long TachyonFile::length()
   return ret.j;
 }
 
+bool TachyonFile::isFile()
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_ISFILE_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.isFile()");
+    printException(m_env, exception);
+    return false; 
+  }
+  return ret.z;
+}
+
 jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
 {
   jthrowable exception;

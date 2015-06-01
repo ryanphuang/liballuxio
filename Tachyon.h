@@ -18,6 +18,7 @@
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
+#define TFILE_ISFILE_METHD          "isFile"
 #define TFILE_RBB_METHD             "readByteBuffer"
 #define TFILE_GIS_METHD             "getInStream"
 
@@ -93,6 +94,7 @@ class TachyonFile : public JNIObjBase {
     TachyonFile(JNIEnv *env, jobject tfile) : JNIObjBase(env, tfile){}
     
     long length();
+    bool isFile();
     jTachyonByteBuffer readByteBuffer(int blockIndex);
     jInStream getInStream(ReadType readType);
 

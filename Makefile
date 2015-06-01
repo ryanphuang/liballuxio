@@ -46,31 +46,41 @@ JAVA_LDS := -L$(JAVA_HOME)/jre/lib/$(OS_ARCH)/server -ljvm
 
 CC ?= gcc
 CXX ?= g++
+AR ?= ar
 
 CFLAGS := -g -Wall -O0 $(JAVA_INCLUDES) -m$(JVM_ARCH) 
 CXXFLAGS := -g -Wall -O0 $(JAVA_INCLUDES) -m$(JVM_ARCH) 
 LDFLAGS := $(JAVA_LDS)
 
-TARGETS := libtachyon.so tachyontest
+LIB_NAME := libtachyon
+DYLIB_NAME := $(LIB_NAME).so
+SLIB_NAME := $(LIB_NAME).a
+TEST_NAME := tachyontest
+
+DYLIB_FLAGS := -shared -fPIC 
+SLIB_FLAGS := rcs
+
+TARGETS := $(DYLIB_NAME) $(SLIB_NAME) $(TEST_NAME)
 
 OBJS := Tachyon.o Util.o JNIHelper.o
-DEPS := $(OBJS:.o=.d)
+TEST_OBJS := TachyonTest.o
+DEPS := $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
 
 all: $(TARGETS)
 
-libtachyon.so: $(OBJS)
-	$(CXX) -o $@ -shared -fPIC $(CXXFLAGS) $(JAVA_LDS) $^
+$(DYLIB_NAME): $(OBJS)
+	$(CXX) -o $@ $(DYLIB_FLAGS) $(CXXFLAGS) $(JAVA_LDS) $^
+
+$(SLIB_NAME): $(OBJS)
+	$(AR) $(SLIB_FLAGS) $@ $^
 
 -include $(DEPS)
 
 %.o :%.cc
 	$(CXX) -MMD -c -fPIC $(CXXFLAGS) $< -o $@
 
-tachyontest: TachyonTest.o libtachyon.so
+$(TEST_NAME): $(TEST_OBJS) $(DYLIB_NAME)
 	$(CXX) $^ -o $@ $(LDFLAGS) 
-
-TachyonTest.o: TachyonTest.cc Tachyon.h
-	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
 	rm -f *.o *.d $(TARGETS)

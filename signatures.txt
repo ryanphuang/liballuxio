@@ -562,3 +562,34 @@ public abstract class tachyon.client.InStream extends java.io.InputStream {
   public abstract long skip(long) throws java.io.IOException;
     Signature: (J)J
 }
+Compiled from "OutStream.java"
+public abstract class tachyon.client.OutStream extends java.io.OutputStream {
+  protected final tachyon.conf.UserConf mUserConf;
+    Signature: Ltachyon/conf/UserConf;
+  protected final tachyon.client.TachyonFile mFile;
+    Signature: Ltachyon/client/TachyonFile;
+  protected final tachyon.client.TachyonFS mTachyonFS;
+    Signature: Ltachyon/client/TachyonFS;
+  protected final tachyon.client.WriteType mWriteType;
+    Signature: Ltachyon/client/WriteType;
+  tachyon.client.OutStream(tachyon.client.TachyonFile, tachyon.client.WriteType);
+    Signature: (Ltachyon/client/TachyonFile;Ltachyon/client/WriteType;)V
+
+  public abstract void cancel() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void close() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void flush() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void write(byte[]) throws java.io.IOException;
+    Signature: ([B)V
+
+  public abstract void write(byte[], int, int) throws java.io.IOException;
+    Signature: ([BII)V
+
+  public abstract void write(int) throws java.io.IOException;
+    Signature: (I)V
+}

@@ -46,8 +46,9 @@ jTachyonFile TachyonClient::getFile(const char * path)
 {
   jthrowable exception;
   jvalue ret;
+  jstring jPathStr;
   
-  jstring jPathStr = m_env->NewStringUTF(path);
+  jPathStr  = m_env->NewStringUTF(path);
   if (jPathStr == NULL) {
     serror("fail to allocate path string");
     return NULL;
@@ -66,7 +67,25 @@ jTachyonFile TachyonClient::getFile(const char * path)
 
 int TachyonClient::createFile(const char * path)
 {
-  return 0;
+  jthrowable exception;
+  jvalue ret;
+  jstring jPathStr;
+  
+  jPathStr  = m_env->NewStringUTF(path);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
+                "(Ljava/lang/String;)I", false, jPathStr);
+  m_env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.createFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.i;
 }
 
 long TachyonFile::length()
@@ -175,7 +194,7 @@ int InStream::read()
   jthrowable exception;
   jvalue ret;
 
-  exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+  exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                 "()I", false);
   if (exception != NULL) {
     serror("fail to call InStream.Read()");
@@ -204,10 +223,10 @@ int InStream::read(void *buff, int length, int off, int maxLen)
   }
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                   "([B)I", false, jBuf);
   else
-    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                   "([BII)I", false, jBuf, off, maxLen);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
@@ -225,13 +244,13 @@ int InStream::read(void *buff, int length, int off, int maxLen)
 
 void InStream::close()
 {
-  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_CLOSE_METHD, 
+  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_CLOSE_METHD, 
       "()V", false);
 }
 
 void InStream::seek(long pos)
 {
-  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_SEEK_METHD, 
+  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_SEEK_METHD, 
       "(J)V", false, (jlong) pos);
 }
 
@@ -240,14 +259,70 @@ long InStream::skip(long n)
   jthrowable exception;
   jvalue ret;
   
-  exception = callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, 
-                TINSTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
+  exception = callMethod(m_env, NULL, m_obj, TISTREAM_CLS, 
+                TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
   if (exception != NULL) {
     serror("fail to call InStream.skip()");
     printException(m_env, exception);
     return -1;
   }
   return ret.j;
+}
+
+void OutStream::cancel()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CANCEL_METHD, 
+      "()V", false);
+}
+
+void OutStream::close()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CLOSE_METHD, 
+      "()V", false);
+}
+
+void OutStream::flush()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_FLUSH_METHD, 
+      "()V", false);
+}
+
+
+void OutStream::write(int byte) 
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+      "(I)V", false, (jint) byte);
+}
+
+void OutStream::write(void *buff, int length)
+{
+  write(buff, length, 0, length);
+}
+
+void OutStream::write(void *buff, int length, int off, int maxLen)
+{
+  jthrowable exception;
+  jbyteArray jBuf;
+
+  jBuf = m_env->NewByteArray(length);
+  if (jBuf == NULL) {
+    serror("fail to allocate jByteArray for OutStream.Write");
+    return;
+  }
+
+  m_env->SetByteArrayRegion(jBuf, 0, length, (jbyte*) buff);
+
+  if (off < 0 || maxLen <= 0 || length == maxLen)
+    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+                  "([B)V", false, jBuf);
+  else
+    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+                  "([BII)V", false, jBuf, (jint) off, (jint) maxLen);
+  m_env->DeleteLocalRef(jBuf);
+  if (exception != NULL) {
+    serror("fail to call OutStream.Write()");
+    printException(m_env, exception);
+  }
 }
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
@@ -267,6 +342,31 @@ jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
           return newRuntimeException(env, "invalid readType");
   }
   return getEnumObject(env, objOut, TREADT_CLS, valueName);
+}
+
+jthrowable enumObjWriteType(JNIEnv *env, jobject *objOut, WriteType writeType)
+{
+  const char *valueName;
+  switch (writeType) {
+    case ASYNC_THROUGH: 
+          valueName = "ASYNC_THROUGH";
+          break;
+    case CACHE_THROUGH:
+          valueName = "CACHE_THROUGH";
+          break;
+    case MUST_CACHE:
+          valueName = "MUST_CACHE";
+          break;
+    case THROUGH:
+          valueName = "THROUGH";
+          break;
+    case TRY_CACHE:
+          valueName = "TRY_CACHE";
+          break;
+    default:
+          return newRuntimeException(env, "invalid writeType");
+  }
+  return getEnumObject(env, objOut, TWRITET_CLS, valueName);
 }
 
 char* fullTachyonPath(const char *masterUri, const char *filePath)

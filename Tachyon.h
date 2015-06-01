@@ -14,7 +14,7 @@
 #define TFS_CLS                     "tachyon/client/TachyonFS"
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
-
+#define TFS_CREATE_FILE_METHD       "createFile"
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
@@ -25,12 +25,19 @@
 #define TBBUF_CLOSE_METHD           "close"
 
 #define TREADT_CLS                  "tachyon/client/ReadType"
+#define TWRITET_CLS                 "tachyon/client/WriteType"
 
-#define TINSTREAM_CLS               "tachyon/client/InStream"
-#define TINSTREAM_READ_METHD        "read"
-#define TINSTREAM_CLOSE_METHD       "close"
-#define TINSTREAM_SEEK_METHD        "seek"
-#define TINSTREAM_SKIP_METHD        "skip"
+#define TISTREAM_CLS               "tachyon/client/InStream"
+#define TISTREAM_READ_METHD        "read"
+#define TISTREAM_CLOSE_METHD       "close"
+#define TISTREAM_SEEK_METHD        "seek"
+#define TISTREAM_SKIP_METHD        "skip"
+
+#define TOSTREAM_CLS               "tachyon/client/OutStream"
+#define TOSTREAM_WRITE_METHD       "write"
+#define TOSTREAM_CLOSE_METHD       "close"
+#define TOSTREAM_FLUSH_METHD       "flush"
+#define TOSTREAM_CANCEL_METHD      "cancel"
 
 #define BBUF_CLS                    "java/nio/ByteBuffer"
 #define BBUF_ALLOC_METHD            "allocate"
@@ -43,12 +50,21 @@ enum ReadType {
   CACHE_PROMOTE,
 };
 
+enum WriteType {
+  ASYNC_THROUGH,
+  CACHE_THROUGH,
+  MUST_CACHE,
+  THROUGH,
+  TRY_CACHE,
+};
+
 class TachyonClient;
 class TachyonFile;
 class TachyonByteBuffer;
 
 class ByteBuffer;
 class InStream;
+class OutStream;
 
 typedef TachyonClient* jTachyonClient;
 typedef TachyonFile* jTachyonFile;
@@ -56,6 +72,7 @@ typedef TachyonByteBuffer* jTachyonByteBuffer;
 
 typedef ByteBuffer* jByteBuffer;
 typedef InStream* jInStream;
+typedef OutStream* jOutStream;
 
 class JNIObjBase {
   public:
@@ -126,6 +143,18 @@ class InStream : public JNIObjBase {
     long skip(long n);
 };
 
+class OutStream : public JNIObjBase {
+  public:
+    OutStream(JNIEnv *env, jobject ostream): JNIObjBase(env, ostream){}
+
+    void cancel();
+    void close();
+    void flush();
+    void write(int byte);
+    void write(void *buff, int length);
+    void write(void *buff, int length, int off, int maxLen);
+};
+
 
 } // namespace tachyon
 
@@ -134,6 +163,7 @@ extern "C" {
 #endif
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, tachyon::ReadType readType);
+jthrowable enumObjWriteType(JNIEnv *env, jobject *objOut, tachyon::WriteType writeType);
 char* fullTachyonPath(const char *masterUri, const char *filePath);
 
 #ifdef __cplusplus

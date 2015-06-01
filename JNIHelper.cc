@@ -232,9 +232,10 @@ jthrowable newRuntimeException(JNIEnv *env, const char *message)
 
   exception = newClassObject(env, &rteObj, JRUNTIMEEXCEPT_CLS, 
                 JRUNTIMEEXCEPT_CTOR, jmsg);
+  env->DeleteLocalRef(jmsg);
   if (exception != NULL)
     return exception;
-  env->DeleteLocalRef(jmsg);
+  // TODO: potential mem leak or stale object reference
   return (jthrowable) rteObj;
 }
 

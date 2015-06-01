@@ -65,6 +65,37 @@ jTachyonFile TachyonClient::getFile(const char * path)
   return new TachyonFile(m_env, ret.l);
 }
 
+jTachyonFile TachyonClient::getFile(int fid)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
+                "(I)Ltachyon/client/TachyonFile;", false, (jint) fid);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.getFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new TachyonFile(m_env, ret.l);
+}
+
+jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
+                "(IZ)Ltachyon/client/TachyonFile;", false, 
+                (jint) fid, (jboolean) useCachedMetadata);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.getFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new TachyonFile(m_env, ret.l);
+}
+
 int TachyonClient::createFile(const char * path)
 {
   jthrowable exception;
@@ -324,6 +355,34 @@ void OutStream::write(void *buff, int length, int off, int maxLen)
     printException(m_env, exception);
   }
 }
+
+jTachyonURI TachyonURI::newURI(const char *pathStr)
+{
+  JNIEnv *env = getJNIEnv();
+  if (env == NULL) {
+    return NULL;
+  }
+
+  jthrowable exception;
+  jobject retObj;
+  
+  jstring jPathStr = env->NewStringUTF(pathStr);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = newClassObject(env, &retObj, TURI_CLS,
+                  "(Ljava/lang/String;)V", jPathStr);
+  env->DeleteLocalRef(jPathStr);
+  if (exception != NULL) {
+    serror("fail to new TachyonURI");
+    printException(env, exception);
+    return NULL;
+  }
+  return new TachyonURI(env, retObj);
+}
+
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
 {

@@ -27,17 +27,19 @@
 #define TREADT_CLS                  "tachyon/client/ReadType"
 #define TWRITET_CLS                 "tachyon/client/WriteType"
 
-#define TISTREAM_CLS               "tachyon/client/InStream"
-#define TISTREAM_READ_METHD        "read"
-#define TISTREAM_CLOSE_METHD       "close"
-#define TISTREAM_SEEK_METHD        "seek"
-#define TISTREAM_SKIP_METHD        "skip"
+#define TISTREAM_CLS                "tachyon/client/InStream"
+#define TISTREAM_READ_METHD         "read"
+#define TISTREAM_CLOSE_METHD        "close"
+#define TISTREAM_SEEK_METHD         "seek"
+#define TISTREAM_SKIP_METHD         "skip"
 
-#define TOSTREAM_CLS               "tachyon/client/OutStream"
-#define TOSTREAM_WRITE_METHD       "write"
-#define TOSTREAM_CLOSE_METHD       "close"
-#define TOSTREAM_FLUSH_METHD       "flush"
-#define TOSTREAM_CANCEL_METHD      "cancel"
+#define TOSTREAM_CLS                "tachyon/client/OutStream"
+#define TOSTREAM_WRITE_METHD        "write"
+#define TOSTREAM_CLOSE_METHD        "close"
+#define TOSTREAM_FLUSH_METHD        "flush"
+#define TOSTREAM_CANCEL_METHD       "cancel"
+
+#define TURI_CLS                    "tachyon/TachyonURI"
 
 #define BBUF_CLS                    "java/nio/ByteBuffer"
 #define BBUF_ALLOC_METHD            "allocate"
@@ -61,6 +63,7 @@ enum WriteType {
 class TachyonClient;
 class TachyonFile;
 class TachyonByteBuffer;
+class TachyonURI;
 
 class ByteBuffer;
 class InStream;
@@ -69,6 +72,7 @@ class OutStream;
 typedef TachyonClient* jTachyonClient;
 typedef TachyonFile* jTachyonFile;
 typedef TachyonByteBuffer* jTachyonByteBuffer;
+typedef TachyonURI* jTachyonURI;
 
 typedef ByteBuffer* jByteBuffer;
 typedef InStream* jInStream;
@@ -97,6 +101,8 @@ class TachyonClient : public JNIObjBase {
   public:
     static jTachyonClient createClient(const char *masterUri);
     jTachyonFile getFile(const char *path);
+    jTachyonFile getFile(int fid);
+    jTachyonFile getFile(int fid, bool useCachedMetadata);
     int createFile(const char *path);
 
   private:
@@ -155,6 +161,14 @@ class OutStream : public JNIObjBase {
     void write(void *buff, int length, int off, int maxLen);
 };
 
+class TachyonURI : public JNIObjBase {
+  public:
+    static jTachyonURI newURI(const char *pathStr);
+    static jTachyonURI newURI(const char *scheme, const char *authority, const char *path);
+    static jTachyonURI newURI(jTachyonURI parent, jTachyonURI child);
+
+    TachyonURI(JNIEnv *env, jobject uri): JNIObjBase(env, uri){}
+};
 
 } // namespace tachyon
 

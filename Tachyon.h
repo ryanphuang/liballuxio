@@ -18,8 +18,10 @@
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
+#define TFILE_PATH_METHD            "getPath"
 #define TFILE_RBB_METHD             "readByteBuffer"
 #define TFILE_GIS_METHD             "getInStream"
+#define TFILE_GOS_METHD             "getOutStream"
 
 #define TBBUF_CLS                   "tachyon/client/TachyonByteBuffer"
 #define TBBUF_CLOSE_METHD           "close"
@@ -116,9 +118,11 @@ class TachyonFile : public JNIObjBase {
     TachyonFile(JNIEnv *env, jobject tfile) : JNIObjBase(env, tfile){}
     
     long length();
+    char * getPath();
+    
     jTachyonByteBuffer readByteBuffer(int blockIndex);
     jInStream getInStream(ReadType readType);
-
+    jOutStream getOutStream(WriteType writeType);
 };
 
 class TachyonByteBuffer : public JNIObjBase {

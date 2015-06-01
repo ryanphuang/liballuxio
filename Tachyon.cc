@@ -134,6 +134,28 @@ long TachyonFile::length()
   return ret.j;
 }
 
+char * TachyonFile::getPath()
+{
+  jthrowable exception;
+  jvalue ret;
+  jstring jpath;
+  const char *path;
+  char *retPath;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_PATH_METHD, 
+                "()Ljava/lang/String;", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.getPath()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  jpath = (jstring) ret.l;
+  path = m_env->GetStringUTFChars(jpath, 0);
+  retPath = strdup(path);
+  m_env->ReleaseStringUTFChars(jpath, path);
+  return retPath;
+}
+
 jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
 {
   jthrowable exception;
@@ -170,6 +192,29 @@ jInStream TachyonFile::getInStream(ReadType readType)
     return NULL;
   }
   return new InStream(m_env, ret.l);
+}
+
+jOutStream TachyonFile::getOutStream(WriteType writeType)
+{
+  jthrowable exception;
+  jvalue ret;
+  jobject eobj;
+
+  exception = enumObjWriteType(m_env, &eobj, writeType);
+  if (exception != NULL) {
+    serror("fail to get enum obj for write type");
+    printException(m_env, exception);
+    return NULL;
+  }
+  
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_GOS_METHD, 
+                "(Ltachyon/client/WriteType;)Ltachyon/client/OutStream;", false, eobj);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.getOutStream()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new OutStream(m_env, ret.l);
 }
 
 jByteBuffer TachyonByteBuffer::getData()
@@ -383,6 +428,49 @@ jTachyonURI TachyonURI::newURI(const char *pathStr)
   return new TachyonURI(env, retObj);
 }
 
+jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const char *path)
+{
+  JNIEnv *env = getJNIEnv();
+  if (env == NULL) {
+    return NULL;
+  }
+
+  jthrowable exception;
+  jobject retObj;
+  jstring jscheme, jauthority, jpath;
+
+  jscheme = env->NewStringUTF(scheme);
+  if (jscheme == NULL) {
+    serror("fail to allocate scheme string");
+    return NULL;
+  }
+  jauthority = env->NewStringUTF(authority);
+  if (jauthority == NULL) {
+    env->DeleteLocalRef(jscheme);
+    serror("fail to allocate authority string");
+    return NULL;
+  }
+  jpath = env->NewStringUTF(path);
+  if (jpath == NULL) {
+    env->DeleteLocalRef(jscheme);
+    env->DeleteLocalRef(jauthority);
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = newClassObject(env, &retObj, TURI_CLS,
+                  "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", 
+                  jscheme, jauthority, jpath);
+  env->DeleteLocalRef(jscheme);
+  env->DeleteLocalRef(jauthority);
+  env->DeleteLocalRef(jpath);
+  if (exception != NULL) {
+    serror("fail to new TachyonURI");
+    printException(env, exception);
+    return NULL;
+  }
+  return new TachyonURI(env, retObj);
+}
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
 {

@@ -20,7 +20,7 @@ const char * program_name;
 const char *masterUri;
 const char *filePath;
 
-const char *testWriteFile = "/hello.txt";
+const char *writef = "/hello.txt";
 
 void usage()
 {
@@ -69,10 +69,10 @@ void testGetFile(jTachyonClient client, const char *fpath)
   printf("===================================\n");
 }
 
-void testCreateFile(jTachyonClient client)
+void testCreateFile(jTachyonClient client, const char *path)
 {
   char *rpath;
-  int fid = client->createFile(testWriteFile);
+  int fid = client->createFile(path);
   if (fid < 0) {
     die("fail to create tachyon file");
   }
@@ -87,22 +87,35 @@ void testCreateFile(jTachyonClient client)
   }
   printf("the created tachyon file has path: %s\n", rpath);
   free(rpath);
+}
 
+void testWriteFile(jTachyonClient client, const char *path)
+{
+  jTachyonFile nfile = client->getFile(path);
   char content[] = "hello, tachyon!!\n";
-  jOutStream ostream = nfile->getOutStream(ASYNC_THROUGH);
+  jOutStream ostream = nfile->getOutStream(MUST_CACHE);
   if (ostream == NULL) {
     die("fail to get outstream");
   }
   ostream->write(content, strlen(content));
   ostream->close();
 
-  jInStream istream = nfile->getInStream(NO_CACHE);
+  jInStream istream = nfile->getInStream(CACHE);
   char buf[32];
   int rdSz = istream->read(buf, 31);
   buf[rdSz] = '\0';
   printf("Content of the created file:\n");
   printf("%s\n", buf);
   istream->close(); // close istream
+}
+
+void testDeleteFile(jTachyonClient client, const char *path)
+{
+  bool ok = client->deletePath(path, false);
+  if (!ok) {
+    die("fail to delete path %s", path);
+  }
+  printf("successfully deleted path %s\n", path);
 }
 
 int main(int argc, char*argv[])
@@ -119,13 +132,11 @@ int main(int argc, char*argv[])
   if (client == NULL) {
     die("fail to create tachyon client");
   }
-  // char * fullFilePath = fullTachyonPath(masterUri, filePath);
+  char * fullFilePath = fullTachyonPath(masterUri, filePath);
   // testGetFile(client, fullFilePath);
-  // testCreateFile(client);
-  bool ok = client->deletePath(testWriteFile, false);
-  if (!ok) {
-    die("fail to delete file %s", testWriteFile);
-  }
+  testCreateFile(client, writef);
+  testWriteFile(client, writef);
+  testDeleteFile(client, writef);
   return 0;
 }
 

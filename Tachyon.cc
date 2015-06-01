@@ -426,6 +426,10 @@ void OutStream::write(void *buff, int length, int off, int maxLen)
 
   m_env->SetByteArrayRegion(jBuf, 0, length, (jbyte*) buff);
 
+  char *jbuff = (char *) malloc(length * sizeof(char));
+  m_env->GetByteArrayRegion(jBuf, 0, length, (jbyte*) jbuff);
+  printf("byte array in write: %s\n", jbuff);
+
   if (off < 0 || maxLen <= 0 || length == maxLen)
     exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
                   "([B)V", false, jBuf);

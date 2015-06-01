@@ -3,4 +3,5 @@
 *.d
 tachyontest
 libtachyon.so
+libtachyon.a
 

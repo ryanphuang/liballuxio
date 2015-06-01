@@ -562,3 +562,114 @@ public abstract class tachyon.client.InStream extends java.io.InputStream {
   public abstract long skip(long) throws java.io.IOException;
     Signature: (J)J
 }
+Compiled from "OutStream.java"
+public abstract class tachyon.client.OutStream extends java.io.OutputStream {
+  protected final tachyon.conf.UserConf mUserConf;
+    Signature: Ltachyon/conf/UserConf;
+  protected final tachyon.client.TachyonFile mFile;
+    Signature: Ltachyon/client/TachyonFile;
+  protected final tachyon.client.TachyonFS mTachyonFS;
+    Signature: Ltachyon/client/TachyonFS;
+  protected final tachyon.client.WriteType mWriteType;
+    Signature: Ltachyon/client/WriteType;
+  tachyon.client.OutStream(tachyon.client.TachyonFile, tachyon.client.WriteType);
+    Signature: (Ltachyon/client/TachyonFile;Ltachyon/client/WriteType;)V
+
+  public abstract void cancel() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void close() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void flush() throws java.io.IOException;
+    Signature: ()V
+
+  public abstract void write(byte[]) throws java.io.IOException;
+    Signature: ([B)V
+
+  public abstract void write(byte[], int, int) throws java.io.IOException;
+    Signature: ([BII)V
+
+  public abstract void write(int) throws java.io.IOException;
+    Signature: (I)V
+}
+Compiled from "TachyonURI.java"
+public final class tachyon.TachyonURI implements java.lang.Comparable<tachyon.TachyonURI> {
+  public static final java.lang.String SEPARATOR;
+    Signature: Ljava/lang/String;
+  public static final java.lang.String CUR_DIR;
+    Signature: Ljava/lang/String;
+  public static final tachyon.TachyonURI EMPTY_URI;
+    Signature: Ltachyon/TachyonURI;
+  public tachyon.TachyonURI(java.lang.String);
+    Signature: (Ljava/lang/String;)V
+
+  public tachyon.TachyonURI(java.lang.String, java.lang.String, java.lang.String);
+    Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public tachyon.TachyonURI(tachyon.TachyonURI, tachyon.TachyonURI);
+    Signature: (Ltachyon/TachyonURI;Ltachyon/TachyonURI;)V
+
+  public int compareTo(tachyon.TachyonURI);
+    Signature: (Ltachyon/TachyonURI;)I
+
+  public boolean equals(java.lang.Object);
+    Signature: (Ljava/lang/Object;)Z
+
+  public java.lang.String getAuthority();
+    Signature: ()Ljava/lang/String;
+
+  public int getDepth();
+    Signature: ()I
+
+  public java.lang.String getHost();
+    Signature: ()Ljava/lang/String;
+
+  public java.lang.String getName();
+    Signature: ()Ljava/lang/String;
+
+  public tachyon.TachyonURI getParent();
+    Signature: ()Ltachyon/TachyonURI;
+
+  public java.lang.String getPath();
+    Signature: ()Ljava/lang/String;
+
+  public int getPort();
+    Signature: ()I
+
+  public java.lang.String getScheme();
+    Signature: ()Ljava/lang/String;
+
+  public boolean hasAuthority();
+    Signature: ()Z
+
+  public int hashCode();
+    Signature: ()I
+
+  public boolean hasScheme();
+    Signature: ()Z
+
+  public boolean isAbsolute();
+    Signature: ()Z
+
+  public boolean isPathAbsolute();
+    Signature: ()Z
+
+  public boolean isRoot();
+    Signature: ()Z
+
+  public tachyon.TachyonURI join(java.lang.String);
+    Signature: (Ljava/lang/String;)Ltachyon/TachyonURI;
+
+  public tachyon.TachyonURI join(tachyon.TachyonURI);
+    Signature: (Ltachyon/TachyonURI;)Ltachyon/TachyonURI;
+
+  public java.lang.String toString();
+    Signature: ()Ljava/lang/String;
+
+  public int compareTo(java.lang.Object);
+    Signature: (Ljava/lang/Object;)I
+
+  static {};
+    Signature: ()V
+}

@@ -46,8 +46,9 @@ jTachyonFile TachyonClient::getFile(const char * path)
 {
   jthrowable exception;
   jvalue ret;
+  jstring jPathStr;
   
-  jstring jPathStr = m_env->NewStringUTF(path);
+  jPathStr  = m_env->NewStringUTF(path);
   if (jPathStr == NULL) {
     serror("fail to allocate path string");
     return NULL;
@@ -64,9 +65,96 @@ jTachyonFile TachyonClient::getFile(const char * path)
   return new TachyonFile(m_env, ret.l);
 }
 
+jTachyonFile TachyonClient::getFile(int fid)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
+                "(I)Ltachyon/client/TachyonFile;", false, (jint) fid);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.getFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new TachyonFile(m_env, ret.l);
+}
+
+jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
+                "(IZ)Ltachyon/client/TachyonFile;", false, 
+                (jint) fid, (jboolean) useCachedMetadata);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.getFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new TachyonFile(m_env, ret.l);
+}
+
 int TachyonClient::createFile(const char * path)
 {
-  return 0;
+  jthrowable exception;
+  jvalue ret;
+  jstring jPathStr;
+  
+  jPathStr  = m_env->NewStringUTF(path);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return 0;
+  }
+
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
+                "(Ljava/lang/String;)I", false, jPathStr);
+  m_env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.createFile()");
+    printException(m_env, exception);
+    return 0;
+  }
+  return ret.i;
+}
+
+bool TachyonClient::deletePath(const char *path, bool recursive)
+{
+  jthrowable exception;
+  jvalue ret;
+  jstring jPathStr;
+  
+  jPathStr  = m_env->NewStringUTF(path);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return false;
+  }
+
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
+                "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
+  m_env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.delete()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonClient::deletePath(int fid, bool recursive)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
+                "(Ljava/lang/String;Z)Z", false, (jint) fid, (jboolean) recursive);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.delete()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.z;
 }
 
 long TachyonFile::length()
@@ -97,6 +185,28 @@ bool TachyonFile::isFile()
     return false; 
   }
   return ret.z;
+}
+
+char * TachyonFile::getPath()
+{
+  jthrowable exception;
+  jvalue ret;
+  jstring jpath;
+  const char *path;
+  char *retPath;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_PATH_METHD, 
+                "()Ljava/lang/String;", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.getPath()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  jpath = (jstring) ret.l;
+  path = m_env->GetStringUTFChars(jpath, 0);
+  retPath = strdup(path);
+  m_env->ReleaseStringUTFChars(jpath, path);
+  return retPath;
 }
 
 jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
@@ -135,6 +245,29 @@ jInStream TachyonFile::getInStream(ReadType readType)
     return NULL;
   }
   return new InStream(m_env, ret.l);
+}
+
+jOutStream TachyonFile::getOutStream(WriteType writeType)
+{
+  jthrowable exception;
+  jvalue ret;
+  jobject eobj;
+
+  exception = enumObjWriteType(m_env, &eobj, writeType);
+  if (exception != NULL) {
+    serror("fail to get enum obj for write type");
+    printException(m_env, exception);
+    return NULL;
+  }
+  
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_GOS_METHD, 
+                "(Ltachyon/client/WriteType;)Ltachyon/client/OutStream;", false, eobj);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.getOutStream()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return new OutStream(m_env, ret.l);
 }
 
 jByteBuffer TachyonByteBuffer::getData()
@@ -190,12 +323,12 @@ int InStream::read()
   jthrowable exception;
   jvalue ret;
 
-  exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+  exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                 "()I", false);
   if (exception != NULL) {
     serror("fail to call InStream.Read()");
     printException(m_env, exception);
-    return NULL;
+    return 0;
   }
   return ret.i;
 }
@@ -219,10 +352,10 @@ int InStream::read(void *buff, int length, int off, int maxLen)
   }
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                   "([B)I", false, jBuf);
   else
-    exception = callMethod(m_env, &ret, m_obj, TINSTREAM_CLS, TINSTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
                   "([BII)I", false, jBuf, off, maxLen);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
@@ -240,13 +373,13 @@ int InStream::read(void *buff, int length, int off, int maxLen)
 
 void InStream::close()
 {
-  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_CLOSE_METHD, 
+  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_CLOSE_METHD, 
       "()V", false);
 }
 
 void InStream::seek(long pos)
 {
-  callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, TINSTREAM_SEEK_METHD, 
+  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_SEEK_METHD, 
       "(J)V", false, (jlong) pos);
 }
 
@@ -255,14 +388,145 @@ long InStream::skip(long n)
   jthrowable exception;
   jvalue ret;
   
-  exception = callMethod(m_env, NULL, m_obj, TINSTREAM_CLS, 
-                TINSTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
+  exception = callMethod(m_env, NULL, m_obj, TISTREAM_CLS, 
+                TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
   if (exception != NULL) {
     serror("fail to call InStream.skip()");
     printException(m_env, exception);
     return -1;
   }
   return ret.j;
+}
+
+void OutStream::cancel()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CANCEL_METHD, 
+      "()V", false);
+}
+
+void OutStream::close()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CLOSE_METHD, 
+      "()V", false);
+}
+
+void OutStream::flush()
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_FLUSH_METHD, 
+      "()V", false);
+}
+
+
+void OutStream::write(int byte) 
+{
+  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+      "(I)V", false, (jint) byte);
+}
+
+void OutStream::write(void *buff, int length)
+{
+  write(buff, length, 0, length);
+}
+
+void OutStream::write(void *buff, int length, int off, int maxLen)
+{
+  jthrowable exception;
+  jbyteArray jBuf;
+
+  jBuf = m_env->NewByteArray(length);
+  if (jBuf == NULL) {
+    serror("fail to allocate jByteArray for OutStream.Write");
+    return;
+  }
+
+  m_env->SetByteArrayRegion(jBuf, 0, length, (jbyte*) buff);
+
+  char *jbuff = (char *) malloc(length * sizeof(char));
+  m_env->GetByteArrayRegion(jBuf, 0, length, (jbyte*) jbuff);
+  printf("byte array in write: %s\n", jbuff);
+
+  if (off < 0 || maxLen <= 0 || length == maxLen)
+    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+                  "([B)V", false, jBuf);
+  else
+    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+                  "([BII)V", false, jBuf, (jint) off, (jint) maxLen);
+  m_env->DeleteLocalRef(jBuf);
+  if (exception != NULL) {
+    serror("fail to call OutStream.Write()");
+    printException(m_env, exception);
+  }
+}
+
+jTachyonURI TachyonURI::newURI(const char *pathStr)
+{
+  JNIEnv *env = getJNIEnv();
+  if (env == NULL) {
+    return NULL;
+  }
+
+  jthrowable exception;
+  jobject retObj;
+  
+  jstring jPathStr = env->NewStringUTF(pathStr);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = newClassObject(env, &retObj, TURI_CLS,
+                  "(Ljava/lang/String;)V", jPathStr);
+  env->DeleteLocalRef(jPathStr);
+  if (exception != NULL) {
+    serror("fail to new TachyonURI");
+    printException(env, exception);
+    return NULL;
+  }
+  return new TachyonURI(env, retObj);
+}
+
+jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const char *path)
+{
+  JNIEnv *env = getJNIEnv();
+  if (env == NULL) {
+    return NULL;
+  }
+
+  jthrowable exception;
+  jobject retObj;
+  jstring jscheme, jauthority, jpath;
+
+  jscheme = env->NewStringUTF(scheme);
+  if (jscheme == NULL) {
+    serror("fail to allocate scheme string");
+    return NULL;
+  }
+  jauthority = env->NewStringUTF(authority);
+  if (jauthority == NULL) {
+    env->DeleteLocalRef(jscheme);
+    serror("fail to allocate authority string");
+    return NULL;
+  }
+  jpath = env->NewStringUTF(path);
+  if (jpath == NULL) {
+    env->DeleteLocalRef(jscheme);
+    env->DeleteLocalRef(jauthority);
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = newClassObject(env, &retObj, TURI_CLS,
+                  "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", 
+                  jscheme, jauthority, jpath);
+  env->DeleteLocalRef(jscheme);
+  env->DeleteLocalRef(jauthority);
+  env->DeleteLocalRef(jpath);
+  if (exception != NULL) {
+    serror("fail to new TachyonURI");
+    printException(env, exception);
+    return NULL;
+  }
+  return new TachyonURI(env, retObj);
 }
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
@@ -282,6 +546,31 @@ jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)
           return newRuntimeException(env, "invalid readType");
   }
   return getEnumObject(env, objOut, TREADT_CLS, valueName);
+}
+
+jthrowable enumObjWriteType(JNIEnv *env, jobject *objOut, WriteType writeType)
+{
+  const char *valueName;
+  switch (writeType) {
+    case ASYNC_THROUGH: 
+          valueName = "ASYNC_THROUGH";
+          break;
+    case CACHE_THROUGH:
+          valueName = "CACHE_THROUGH";
+          break;
+    case MUST_CACHE:
+          valueName = "MUST_CACHE";
+          break;
+    case THROUGH:
+          valueName = "THROUGH";
+          break;
+    case TRY_CACHE:
+          valueName = "TRY_CACHE";
+          break;
+    default:
+          return newRuntimeException(env, "invalid writeType");
+  }
+  return getEnumObject(env, objOut, TWRITET_CLS, valueName);
 }
 
 char* fullTachyonPath(const char *masterUri, const char *filePath)

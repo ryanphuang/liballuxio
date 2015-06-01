@@ -15,10 +15,12 @@
 
 using namespace tachyon;
 
+const char * program_name;
+
 const char *masterUri;
 const char *filePath;
 
-const char * program_name;
+const char *testWriteFile = "/hello.txt";
 
 void usage()
 {
@@ -70,7 +72,7 @@ void testGetFile(jTachyonClient client, const char *fpath)
 void testCreateFile(jTachyonClient client)
 {
   char *rpath;
-  int fid = client->createFile("/hello.txt");
+  int fid = client->createFile(testWriteFile);
   if (fid < 0) {
     die("fail to create tachyon file");
   }
@@ -117,10 +119,13 @@ int main(int argc, char*argv[])
   if (client == NULL) {
     die("fail to create tachyon client");
   }
-  char * fullFilePath = fullTachyonPath(masterUri, filePath);
-  testGetFile(client, fullFilePath);
-  testCreateFile(client);
-
+  // char * fullFilePath = fullTachyonPath(masterUri, filePath);
+  // testGetFile(client, fullFilePath);
+  // testCreateFile(client);
+  bool ok = client->deletePath(testWriteFile, false);
+  if (!ok) {
+    die("fail to delete file %s", testWriteFile);
+  }
   return 0;
 }
 

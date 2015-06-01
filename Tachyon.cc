@@ -119,6 +119,44 @@ int TachyonClient::createFile(const char * path)
   return ret.i;
 }
 
+bool TachyonClient::deletePath(const char *path, bool recursive)
+{
+  jthrowable exception;
+  jvalue ret;
+  jstring jPathStr;
+  
+  jPathStr  = m_env->NewStringUTF(path);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return NULL;
+  }
+
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
+                "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
+  m_env->DeleteLocalRef(jPathStr); 
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.delete()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.z;
+}
+
+bool TachyonClient::deletePath(int fid, bool recursive)
+{
+  jthrowable exception;
+  jvalue ret;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
+                "(Ljava/lang/String;Z)Z", false, (jint) fid, (jboolean) recursive);
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.delete()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.z;
+}
+
 long TachyonFile::length()
 {
   jthrowable exception;

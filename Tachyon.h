@@ -15,6 +15,7 @@
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
 #define TFS_CREATE_FILE_METHD       "createFile"
+#define TFS_DELETE_FILE_METHD       "delete"
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
@@ -102,10 +103,15 @@ class TachyonClient : public JNIObjBase {
 
   public:
     static jTachyonClient createClient(const char *masterUri);
+
     jTachyonFile getFile(const char *path);
     jTachyonFile getFile(int fid);
     jTachyonFile getFile(int fid, bool useCachedMetadata);
+
     int createFile(const char *path);
+
+    bool deletePath(const char *path, bool recursive);
+    bool deletePath(int fid, bool recursive);
 
   private:
     // hide constructor, must be instantiated using createClient method

@@ -39,6 +39,8 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
     printException(env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new TachyonClient(env, ret.l);
 }
 
@@ -62,6 +64,8 @@ jTachyonFile TachyonClient::getFile(const char * path)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new TachyonFile(m_env, ret.l);
 }
 
@@ -77,6 +81,8 @@ jTachyonFile TachyonClient::getFile(int fid)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new TachyonFile(m_env, ret.l);
 }
 
@@ -93,6 +99,8 @@ jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new TachyonFile(m_env, ret.l);
 }
 
@@ -258,6 +266,8 @@ char * TachyonFile::getPath()
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   jpath = (jstring) ret.l;
   path = m_env->GetStringUTFChars(jpath, 0);
   retPath = strdup(path);
@@ -277,6 +287,8 @@ jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new TachyonByteBuffer(m_env, ret.l);
 }
 
@@ -300,6 +312,8 @@ jInStream TachyonFile::getInStream(ReadType readType)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new InStream(m_env, ret.l);
 }
 
@@ -323,6 +337,8 @@ jOutStream TachyonFile::getOutStream(WriteType writeType)
     printException(m_env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new OutStream(m_env, ret.l);
 }
 
@@ -371,6 +387,8 @@ jByteBuffer ByteBuffer::allocate(int capacity)
     printException(env, exception);
     return NULL;
   }
+  if (ret.l == NULL)
+    return NULL;
   return new ByteBuffer(env, ret.l);
 }
 

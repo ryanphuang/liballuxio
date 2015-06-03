@@ -15,6 +15,8 @@
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
 #define TFS_CREATE_FILE_METHD       "createFile"
+#define TFS_MKDIR_METHD             "mkdir"
+#define TFS_MKDIRS_METHD            "mkdirs"
 #define TFS_DELETE_FILE_METHD       "delete"
 
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
@@ -91,9 +93,9 @@ class JNIObjBase {
       env->DeleteLocalRef(localObj);
     }
 
-    ~JNIObjBase() {
-      m_env->DeleteGlobalRef(m_obj);
-    }
+    ~JNIObjBase() { m_env->DeleteGlobalRef(m_obj); }
+
+    jobject getJObj() { return m_obj; }
 
   protected:
     JNIEnv *m_env;
@@ -110,6 +112,8 @@ class TachyonClient : public JNIObjBase {
     jTachyonFile getFile(int fid, bool useCachedMetadata);
 
     int createFile(const char *path);
+    bool mkdir(const char *path);
+    bool mkdirs(const char *path, bool recursive);
 
     bool deletePath(const char *path, bool recursive);
     bool deletePath(int fid, bool recursive);

@@ -75,12 +75,22 @@ void testGetFile(jTachyonClient client, const char *fpath)
   printf("===================================\n");
 }
 
+void testMkdir(jTachyonClient client, const char *path)
+{
+  bool ok = client->mkdir(path);
+  if (!ok) {
+    die("fail to create tachyon dir %s", path);
+  }
+  
+  printf("created tachyon dir %s\n", path);
+}
+
 void testCreateFile(jTachyonClient client, const char *path)
 {
   char *rpath;
   int fid = client->createFile(path);
   if (fid < 0) {
-    die("fail to create tachyon file");
+    die("fail to create tachyon file %s", path);
   }
   printf("created tachyon file fid:%d\n", fid);
   jTachyonFile nfile = client->getFile(fid);
@@ -115,9 +125,9 @@ void testWriteFile(jTachyonClient client, const char *path)
   istream->close(); // close istream
 }
 
-void testDeleteFile(jTachyonClient client, const char *path)
+void testDeleteFile(jTachyonClient client, const char *path, bool recursive)
 {
-  bool ok = client->deletePath(path, false);
+  bool ok = client->deletePath(path, recursive);
   if (!ok) {
     die("fail to delete path %s", path);
   }
@@ -142,7 +152,9 @@ int main(int argc, char*argv[])
   testGetFile(client, fullFilePath);
   testCreateFile(client, writef);
   testWriteFile(client, writef);
-  testDeleteFile(client, writef);
+  testDeleteFile(client, writef, false);
+  testMkdir(client, "/kvstore");
+  testDeleteFile(client, "/kvstore", true);
   return 0;
 }
 

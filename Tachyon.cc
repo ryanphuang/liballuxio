@@ -102,12 +102,6 @@ int TachyonClient::createFile(const char * path)
   jvalue ret;
   jstring jPathStr;
   
-  jPathStr  = m_env->NewStringUTF(path);
-  if (jPathStr == NULL) {
-    serror("fail to allocate path string");
-    return 0;
-  }
-
   exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
                 "(Ljava/lang/String;)I", false, jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
@@ -117,6 +111,44 @@ int TachyonClient::createFile(const char * path)
     return 0;
   }
   return ret.i;
+}
+
+bool TachyonClient::mkdir(const char *path)
+{
+  jthrowable exception;
+  jvalue ret;
+  jTachyonURI uri = TachyonURI::newURI(path);
+  if (uri == NULL)
+    return false;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_MKDIR_METHD, 
+                "(Ltachyon/TachyonURI;)Z", false, uri->getJObj());
+  delete uri;
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.mkdir()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonClient::mkdirs(const char *path, bool recursive)
+{
+  jthrowable exception;
+  jvalue ret;
+  jTachyonURI uri = TachyonURI::newURI(path);
+  if (uri == NULL)
+    return false;
+  
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_MKDIRS_METHD, 
+                "(Ltachyon/TachyonURI;Z)Z", false, uri->getJObj(), (jboolean) recursive);
+  delete uri;
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.mkdir()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
 }
 
 bool TachyonClient::deletePath(const char *path, bool recursive)

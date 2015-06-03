@@ -29,26 +29,26 @@ void usage()
 
 void testGetFile(jTachyonClient client, const char *fpath)
 {
-  jTachyonFile file = client->getFile(fpath);
-  if (file == NULL) {
+  jTachyonFile nfile = client->getFile(fpath);
+  if (nfile == NULL) {
     die("fail to get tachyon file: %s", fpath);
   }
   int fid = client->getFileId(fpath);
   if (fid < 0) {
     die("fail to get file id for %s", fpath);
   }
-  long size = file->length();
+  long size = nfile->length();
   if (size < 0) {
     die("fail to get tachyon file size");
   }
   printf("got tachyon file, size: %ld, id: %d\n", size, fid);
-  if (file->isFile() == true) {
+  if (nfile->isFile() == true) {
     printf("Is a regular file\n");
   } else {
     printf("Not a regular file\n");
   }
   
-  char * rpath = file->getPath();
+  char * rpath = nfile->getPath();
   if (rpath == NULL) {
     die("fail to get tachyon file path");
   }
@@ -58,7 +58,7 @@ void testGetFile(jTachyonClient client, const char *fpath)
   printf("===================================\n");
   free(rpath);
 
-  jInStream istream = file->getInStream(NO_CACHE);
+  jInStream istream = nfile->getInStream(NO_CACHE);
   if (istream == NULL) {
     die("fail to get tachyon file instream");
   }
@@ -77,6 +77,8 @@ void testGetFile(jTachyonClient client, const char *fpath)
   istream->close(); // close istream
   printf("\n");
   printf("===================================\n");
+  delete istream;
+  delete nfile;
 }
 
 void testMkdir(jTachyonClient client, const char *path)
@@ -106,6 +108,7 @@ void testCreateFile(jTachyonClient client, const char *path)
   }
   printf("the created tachyon file has path: %s\n", rpath);
   free(rpath);
+  delete nfile;
 }
 
 void testWriteFile(jTachyonClient client, const char *path)
@@ -118,6 +121,7 @@ void testWriteFile(jTachyonClient client, const char *path)
   }
   ostream->write(content, strlen(content));
   ostream->close();
+  delete ostream; // release the jobject
 
   jInStream istream = nfile->getInStream(CACHE);
   char buf[32];
@@ -126,6 +130,8 @@ void testWriteFile(jTachyonClient client, const char *path)
   printf("Content of the created file:\n");
   printf("%s\n", buf);
   istream->close(); // close istream
+  delete istream; // release the jobject
+  delete nfile;
 }
 
 void testDeleteFile(jTachyonClient client, const char *path, bool recursive)
@@ -158,6 +164,7 @@ int main(int argc, char*argv[])
   testDeleteFile(client, writef, false);
   testMkdir(client, "/kvstore");
   testDeleteFile(client, "/kvstore", true);
+  delete client;
   return 0;
 }
 

@@ -254,30 +254,37 @@ bool getMethodRetType(char * rettOut, const char *methodSignature)
 
 void printException(JNIEnv *env, jthrowable exception)
 {
-  jclass cls;
+  jclass excepcls;
   jclass basecls;
-  jobject obj;
+  jobject excepobj;
   jmethodID mid;
 
   jstring jClsName;
   jstring jMsg;
 
-  cls = env->GetObjectClass(exception);
-  mid = env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
-  obj = env->CallObjectMethod(exception, mid);
-  basecls = env->GetObjectClass(obj);
+  excepcls = env->GetObjectClass(exception);
+  mid = env->GetMethodID(excepcls, "getClass", "()Ljava/lang/Class;");
+  excepobj = env->CallObjectMethod(exception, mid);
+  basecls = env->GetObjectClass(excepobj);
+
   mid = env->GetMethodID(basecls, "getName", "()Ljava/lang/String;");
-  jClsName = (jstring) env->CallObjectMethod(obj, mid);
+  jClsName = (jstring) env->CallObjectMethod(excepobj, mid);
+  if (jClsName != NULL) {
+    const char *clsName = env->GetStringUTFChars(jClsName, 0);
 
-  mid = env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
-  jMsg = (jstring) env->CallObjectMethod(exception, mid);
-
-  const char *clsName = env->GetStringUTFChars(jClsName, 0);
-  const char *msg = env->GetStringUTFChars(jMsg, 0); 
-
-  printf("exception in %s: %s\n", clsName, msg);
-  env->ReleaseStringUTFChars(jClsName, clsName); 
-  env->ReleaseStringUTFChars(jMsg, msg); 
+    mid = env->GetMethodID(excepcls, "getMessage", "()Ljava/lang/String;");
+    jMsg = (jstring) env->CallObjectMethod(exception, mid);
+    if (jMsg != NULL) {
+      const char *msg = env->GetStringUTFChars(jMsg, 0); 
+      printf("exception in %s: %s\n", clsName, msg);
+      env->ReleaseStringUTFChars(jMsg, msg); 
+    } else {
+      printf("exception in %s, no exception message\n", clsName);
+    }
+    env->ReleaseStringUTFChars(jClsName, clsName); 
+  } else {
+    printf("exception in unknown class\n");
+  }
 }
 
 jthrowable callMethod(JNIEnv *env, jvalue *retOut, jobject obj, 

@@ -176,8 +176,8 @@ class OutStream : public JNIObjBase {
     void close();
     void flush();
     void write(int byte);
-    void write(void *buff, int length);
-    void write(void *buff, int length, int off, int maxLen);
+    void write(const void *buff, int length);
+    void write(const void *buff, int length, int off, int maxLen);
 };
 
 class TachyonURI : public JNIObjBase {

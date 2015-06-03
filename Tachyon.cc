@@ -479,12 +479,12 @@ void OutStream::write(int byte)
       "(I)V", false, (jint) byte);
 }
 
-void OutStream::write(void *buff, int length)
+void OutStream::write(const void *buff, int length)
 {
   write(buff, length, 0, length);
 }
 
-void OutStream::write(void *buff, int length, int off, int maxLen)
+void OutStream::write(const void *buff, int length, int off, int maxLen)
 {
   jthrowable exception;
   jbyteArray jBuf;

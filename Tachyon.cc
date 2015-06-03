@@ -212,7 +212,7 @@ bool TachyonClient::deletePath(int fid, bool recursive)
   jvalue ret;
   
   exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
-                "(Ljava/lang/String;Z)Z", false, (jint) fid, (jboolean) recursive);
+                "(IZ)Z", false, (jint) fid, (jboolean) recursive);
   if (exception != NULL) {
     serror("fail to call TachyonFS.delete()");
     printException(m_env, exception);

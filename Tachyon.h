@@ -14,6 +14,7 @@
 #define TFS_CLS                     "tachyon/client/TachyonFS"
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
+#define TFS_GET_FILEID_METHD        "getFileId"
 #define TFS_CREATE_FILE_METHD       "createFile"
 #define TFS_MKDIR_METHD             "mkdir"
 #define TFS_MKDIRS_METHD            "mkdirs"
@@ -110,6 +111,8 @@ class TachyonClient : public JNIObjBase {
     jTachyonFile getFile(const char *path);
     jTachyonFile getFile(int fid);
     jTachyonFile getFile(int fid, bool useCachedMetadata);
+
+    int getFileId(const char *path);
 
     int createFile(const char *path);
     bool mkdir(const char *path);

@@ -96,12 +96,36 @@ jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
   return new TachyonFile(m_env, ret.l);
 }
 
+int TachyonClient::getFileId(const char *path)
+{
+  jthrowable exception;
+  jvalue ret;
+  jTachyonURI uri = TachyonURI::newURI(path);
+  if (uri == NULL)
+    return -1;
+  exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILEID_METHD, 
+                "(Ltachyon/TachyonURI;)I", false, uri->getJObj());
+  delete uri;
+  if (exception != NULL) {
+    serror("fail to call TachyonFS.getFile()");
+    printException(m_env, exception);
+    return NULL;
+  }
+  return ret.i;
+}
+
 int TachyonClient::createFile(const char * path)
 {
   jthrowable exception;
   jvalue ret;
   jstring jPathStr;
   
+  jPathStr  = m_env->NewStringUTF(path);
+  if (jPathStr == NULL) {
+    serror("fail to allocate path string");
+    return 0;
+  }
+
   exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
                 "(Ljava/lang/String;)I", false, jPathStr);
   m_env->DeleteLocalRef(jPathStr); 

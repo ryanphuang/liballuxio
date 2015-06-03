@@ -31,13 +31,17 @@ void testGetFile(jTachyonClient client, const char *fpath)
 {
   jTachyonFile file = client->getFile(fpath);
   if (file == NULL) {
-    die("fail to get tachyon file");
+    die("fail to get tachyon file: %s", fpath);
+  }
+  int fid = client->getFileId(fpath);
+  if (fid < 0) {
+    die("fail to get file id for %s", fpath);
   }
   long size = file->length();
   if (size < 0) {
     die("fail to get tachyon file size");
   }
-  printf("got tachyon file, size: %ld\n", size);
+  printf("got tachyon file, size: %ld, id: %d\n", size, fid);
   if (file->isFile() == true) {
     printf("Is a regular file\n");
   } else {
@@ -81,7 +85,6 @@ void testMkdir(jTachyonClient client, const char *path)
   if (!ok) {
     die("fail to create tachyon dir %s", path);
   }
-  
   printf("created tachyon dir %s\n", path);
 }
 

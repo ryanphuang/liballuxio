@@ -35,7 +35,7 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFS;", true, jPathStr);
   env->DeleteLocalRef(jPathStr); 
   if (exception != NULL) {
-    serror("fail to call TachyonFS.get()");
+    verror("fail to call TachyonFS.get() for %s\n", masterUri);
     printException(env, exception);
     return NULL;
   }
@@ -60,7 +60,7 @@ jTachyonFile TachyonClient::getFile(const char * path)
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFile;", false, jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   if (exception != NULL) {
-    serror("fail to call TachyonFS.getFile()");
+    verror("fail to call TachyonFS.getFile() for %s\n", path);
     printException(m_env, exception);
     return NULL;
   }
@@ -77,7 +77,7 @@ jTachyonFile TachyonClient::getFile(int fid)
   exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
                 "(I)Ltachyon/client/TachyonFile;", false, (jint) fid);
   if (exception != NULL) {
-    serror("fail to call TachyonFS.getFile()");
+    verror("fail to call TachyonFS.getFile() for fid %d\n", fid);
     printException(m_env, exception);
     return NULL;
   }
@@ -95,7 +95,7 @@ jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
                 "(IZ)Ltachyon/client/TachyonFile;", false, 
                 (jint) fid, (jboolean) useCachedMetadata);
   if (exception != NULL) {
-    serror("fail to call TachyonFS.getFile()");
+    verror("fail to call TachyonFS.getFile() for fid %d\n", fid);
     printException(m_env, exception);
     return NULL;
   }
@@ -115,7 +115,7 @@ int TachyonClient::getFileId(const char *path)
                 "(Ltachyon/TachyonURI;)I", false, uri->getJObj());
   delete uri;
   if (exception != NULL) {
-    serror("fail to call TachyonFS.getFile()");
+    verror("fail to call TachyonFS.getFileId() for %s\n", path);
     printException(m_env, exception);
     return NULL;
   }
@@ -138,7 +138,7 @@ int TachyonClient::createFile(const char * path)
                 "(Ljava/lang/String;)I", false, jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   if (exception != NULL) {
-    serror("fail to call TachyonFS.createFile()");
+    verror("fail to call TachyonFS.createFile() for %s\n", path);
     printException(m_env, exception);
     return 0;
   }
@@ -157,7 +157,7 @@ bool TachyonClient::mkdir(const char *path)
                 "(Ltachyon/TachyonURI;)Z", false, uri->getJObj());
   delete uri;
   if (exception != NULL) {
-    serror("fail to call TachyonFS.mkdir()");
+    verror("fail to call TachyonFS.mkdir() for %s\n", path);
     printException(m_env, exception);
     return false;
   }
@@ -176,7 +176,7 @@ bool TachyonClient::mkdirs(const char *path, bool recursive)
                 "(Ltachyon/TachyonURI;Z)Z", false, uri->getJObj(), (jboolean) recursive);
   delete uri;
   if (exception != NULL) {
-    serror("fail to call TachyonFS.mkdir()");
+    verror("fail to call TachyonFS.mkdir() for %s", path);
     printException(m_env, exception);
     return false;
   }
@@ -199,7 +199,7 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
                 "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
   m_env->DeleteLocalRef(jPathStr); 
   if (exception != NULL) {
-    serror("fail to call TachyonFS.delete()");
+    verror("fail to call TachyonFS.delete() for %s\n", path);
     printException(m_env, exception);
     return false;
   }
@@ -214,7 +214,7 @@ bool TachyonClient::deletePath(int fid, bool recursive)
   exception = callMethod(m_env, &ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
                 "(IZ)Z", false, (jint) fid, (jboolean) recursive);
   if (exception != NULL) {
-    serror("fail to call TachyonFS.delete()");
+    verror("fail to call TachyonFS.delete() for fid %d\n", fid);
     printException(m_env, exception);
     return NULL;
   }

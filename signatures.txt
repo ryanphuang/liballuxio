@@ -682,6 +682,9 @@ public class tachyon.client.TachyonKV {
   public tachyon.client.TachyonKV(tachyon.client.TachyonFS, java.lang.String);
     Signature: (Ltachyon/client/TachyonFS;Ljava/lang/String;)V
 
+  public boolean init();
+    Signature: ()Z
+
   public void write(java.lang.String, byte[]) throws java.io.IOException;
     Signature: (Ljava/lang/String;[B)V
 

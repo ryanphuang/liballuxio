@@ -645,6 +645,18 @@ jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
   return new TachyonKV(env, retObj);
 }
 
+bool TachyonKV::init()
+{
+  jthrowable exception;
+  jvalue ret;
+  callMethod(m_env, &ret, m_obj, TKV_CLS, TKV_INIT_METHD, "()Z", false);
+  exception = getAndClearException(m_env);
+  if (exception != NULL) {
+    printException(m_env, exception);
+  }
+  return ret.i;
+}
+
 int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen)
 {
   jthrowable exception;

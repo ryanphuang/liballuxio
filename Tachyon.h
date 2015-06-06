@@ -49,6 +49,7 @@
 
 // non-standard Tachyon API
 #define TKV_CLS                     "tachyon/client/TachyonKV"
+#define TKV_INIT_METHD              "init"
 #define TKV_GET_METHD               "read"
 #define TKV_SET_METHD               "write"
 
@@ -206,7 +207,8 @@ class TachyonKV : public JNIObjBase {
     static jTachyonKV createKV(jTachyonClient client, const char *kvStore);
 
     TachyonKV(JNIEnv *env, jobject tkv) : JNIObjBase(env, tkv) {} 
-
+  
+    bool init(); // test if kv store can be initialized before doing r/w
     int get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen);
     void set(const char *key, uint32_t keylen, const char *buff, uint32_t valuelen);
 };

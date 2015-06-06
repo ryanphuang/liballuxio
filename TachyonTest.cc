@@ -145,11 +145,15 @@ void testDeleteFile(jTachyonClient client, const char *path, bool recursive)
 
 void testGetSet(jTachyonClient client)
 {
-  jTachyonKV kv = TachyonKV::createKV(client, "/jkvstore/");
+  jTachyonKV kv = TachyonKV::createKV(client, "/jkv/");
   if (kv == NULL) {
     die("fail to create tachyon kv\n");
   }
-  printf("successfully created tachyon kv\n");
+  if (kv->init()) {
+    printf("successfully initialized tachyon kv\n");
+  } else {
+    die("fail to initialize tachyon kv\n");
+  }
   char buf[32];
   kv->set("fooo", 4, "bar", 4);
   int sz = kv->get("fooo", 4, buf, 32);
@@ -179,8 +183,8 @@ int main(int argc, char*argv[])
   testCreateFile(client, writef);
   testWriteFile(client, writef);
   testDeleteFile(client, writef, false);
-  testMkdir(client, "/kvstore");
-  testDeleteFile(client, "/kvstore", true);
+  testMkdir(client, "/tachyontest");
+  testDeleteFile(client, "/tachyontest", true);
   testGetSet(client);
   delete client;
   return 0;

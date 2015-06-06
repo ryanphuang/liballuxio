@@ -203,6 +203,8 @@ class TachyonKV : public JNIObjBase {
 
   public:
     static jTachyonKV createKV(jTachyonClient client);
+    static jTachyonKV createKV(jTachyonClient client, const char *kvStore);
+
     TachyonKV(JNIEnv *env, jobject tkv) : JNIObjBase(env, tkv) {} 
 
     int get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen);

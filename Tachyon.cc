@@ -611,11 +611,30 @@ jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const 
 
 jTachyonKV TachyonKV::createKV(jTachyonClient client)
 {
+  return createKV(client, NULL);
+}
+
+jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
+{
   JNIEnv *env = client->getJEnv();
   jobject retObj;
   jthrowable exception;
-  exception = newClassObject(env, &retObj, TKV_CLS,
-                  "(Ltachyon/client/TachyonFS;)V", client->getJObj());
+
+  if (kvStore == NULL) {
+    exception = newClassObject(env, &retObj, TKV_CLS,
+                  "(Ltachyon/client/TachyonFS;)V", 
+                  client->getJObj());
+  } else {
+    jstring jKVStr = env->NewStringUTF(kvStore);
+    if (jKVStr == NULL) {
+      serror("fail to allocate kvstore string");
+      return NULL;
+    }
+    exception = newClassObject(env, &retObj, TKV_CLS,
+                  "(Ltachyon/client/TachyonFS;Ljava/lang/String;)V", 
+                  client->getJObj(), jKVStr);
+    env->DeleteLocalRef(jKVStr);
+  }
   if (exception != NULL) {
     serror("fail to createKV");
     printException(env, exception);

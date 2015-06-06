@@ -673,3 +673,15 @@ public final class tachyon.TachyonURI implements java.lang.Comparable<tachyon.Ta
   static {};
     Signature: ()V
 }
+
+Compiled from "TachyonKV.java"
+public class tachyon.client.TachyonKV {
+  public tachyon.client.TachyonKV(tachyon.client.TachyonFS);
+    Signature: (Ltachyon/client/TachyonFS;)V
+
+  public void write(java.lang.String, byte[]) throws java.io.IOException;
+    Signature: (Ljava/lang/String;[B)V
+
+  public int read(java.lang.String, byte[]) throws java.io.IOException;
+    Signature: (Ljava/lang/String;[B)I
+}

@@ -10,6 +10,7 @@
 #define __TACHYON_H_
 
 #include<jni.h>
+#include<stdint.h>
 
 #define TFS_CLS                     "tachyon/client/TachyonFS"
 #define TFS_GET_METHD               "get"
@@ -46,6 +47,11 @@
 #define TOSTREAM_FLUSH_METHD        "flush"
 #define TOSTREAM_CANCEL_METHD       "cancel"
 
+// non-standard Tachyon API
+#define TKV_CLS                     "tachyon/client/TachyonKV"
+#define TKV_GET_METHD               "read"
+#define TKV_SET_METHD               "write"
+
 #define TURI_CLS                    "tachyon/TachyonURI"
 
 #define BBUF_CLS                    "java/nio/ByteBuffer"
@@ -71,6 +77,7 @@ class TachyonClient;
 class TachyonFile;
 class TachyonByteBuffer;
 class TachyonURI;
+class TachyonKV; // non-standard tachyon API
 
 class ByteBuffer;
 class InStream;
@@ -80,6 +87,7 @@ typedef TachyonClient* jTachyonClient;
 typedef TachyonFile* jTachyonFile;
 typedef TachyonByteBuffer* jTachyonByteBuffer;
 typedef TachyonURI* jTachyonURI;
+typedef TachyonKV* jTachyonKV; // non-standard tachyon API
 
 typedef ByteBuffer* jByteBuffer;
 typedef InStream* jInStream;
@@ -97,6 +105,7 @@ class JNIObjBase {
     ~JNIObjBase() { m_env->DeleteGlobalRef(m_obj); }
 
     jobject getJObj() { return m_obj; }
+    JNIEnv * getJEnv() { return m_env; }
 
   protected:
     JNIEnv *m_env;
@@ -188,6 +197,19 @@ class TachyonURI : public JNIObjBase {
 
     TachyonURI(JNIEnv *env, jobject uri): JNIObjBase(env, uri){}
 };
+
+// non-standard tachyon API
+class TachyonKV : public JNIObjBase {
+
+  public:
+    static jTachyonKV createKV(jTachyonClient client);
+    TachyonKV(JNIEnv *env, jobject tkv) : JNIObjBase(env, tkv) {} 
+
+    int get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen);
+    void set(const char *key, uint32_t keylen, const char *buff, uint32_t valuelen);
+};
+
+
 
 } // namespace tachyon
 

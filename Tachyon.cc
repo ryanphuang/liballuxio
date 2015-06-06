@@ -10,6 +10,7 @@
 #include "Util.h"
 #include "JNIHelper.h"
 
+#include <string>
 #include <string.h>
 #include <stdlib.h>
 
@@ -366,7 +367,12 @@ jByteBuffer TachyonByteBuffer::getData()
 
 void TachyonByteBuffer::close()
 {
+  jthrowable exception;
   callMethod(m_env, NULL, m_obj, TBBUF_CLS, TBBUF_CLOSE_METHD, "()V", false);
+  exception = getAndClearException(m_env);
+  if (exception != NULL) {
+    printException(m_env, exception);
+  }
 }
 
 jByteBuffer ByteBuffer::allocate(int capacity)
@@ -601,6 +607,88 @@ jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const 
     return NULL;
   }
   return new TachyonURI(env, retObj);
+}
+
+jTachyonKV TachyonKV::createKV(jTachyonClient client)
+{
+  JNIEnv *env = client->getJEnv();
+  jobject retObj;
+  jthrowable exception;
+  exception = newClassObject(env, &retObj, TKV_CLS,
+                  "(Ltachyon/client/TachyonFS;)V", client->getJObj());
+  if (exception != NULL) {
+    serror("fail to createKV");
+    printException(env, exception);
+    return NULL;
+  }
+  if (retObj == NULL)
+    return NULL;
+  return new TachyonKV(env, retObj);
+}
+
+int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen)
+{
+  jthrowable exception;
+  jbyteArray jBuf;
+  jvalue ret;
+  int rdSz;
+
+  std::string skey(key, keylen);
+  jstring jKeyStr = m_env->NewStringUTF(skey.c_str());
+  if (jKeyStr == NULL) {
+    serror("fail to allocate key string");
+    return NULL;
+  }
+
+  jBuf = m_env->NewByteArray(valuelen);
+  if (jBuf == NULL) {
+    serror("fail to allocate jByteArray for TachyonKV.get");
+    return -1;
+  }
+  exception = callMethod(m_env, &ret, m_obj, TKV_CLS, TKV_GET_METHD,
+          "(Ljava/lang/String;[B)I", false, jKeyStr, jBuf);
+  m_env->DeleteLocalRef(jKeyStr);
+  if (exception != NULL) {
+    m_env->DeleteLocalRef(jBuf);
+    serror("fail to call TachyonKV.get()");
+    printException(m_env, exception);
+    return -1;
+  }
+  rdSz = ret.i;
+  if (rdSz > 0) {
+    m_env->GetByteArrayRegion(jBuf, 0, valuelen, (jbyte*) buff);
+  }
+  m_env->DeleteLocalRef(jBuf);
+  return rdSz;
+}
+
+void TachyonKV::set(const char *key, uint32_t keylen, const char *buff, uint32_t valuelen)
+{
+  jthrowable exception;
+  jbyteArray jBuf;
+
+  std::string skey(key, keylen);
+  jstring jKeyStr = m_env->NewStringUTF(skey.c_str());
+  if (jKeyStr == NULL) {
+    serror("fail to allocate key string");
+    return;
+  }
+
+  jBuf = m_env->NewByteArray(valuelen);
+  if (jBuf == NULL) {
+    serror("fail to allocate jByteArray for TachyonKV.set");
+    return;
+  }
+  m_env->SetByteArrayRegion(jBuf, 0, valuelen, (jbyte*) buff);
+
+  exception = callMethod(m_env, NULL, m_obj, TKV_CLS, TKV_SET_METHD,
+          "(Ljava/lang/String;[B)V", false, jKeyStr, jBuf);
+  m_env->DeleteLocalRef(jKeyStr);
+  if (exception != NULL) {
+    m_env->DeleteLocalRef(jBuf);
+    serror("fail to call TachyonKV.set()");
+    printException(m_env, exception);
+  }
 }
 
 jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, ReadType readType)

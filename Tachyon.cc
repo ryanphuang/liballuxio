@@ -620,7 +620,7 @@ jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
   jobject retObj;
   jthrowable exception;
 
-  if (kvStore == NULL) {
+  if (kvStore == NULL || strlen(kvStore) == 0) {
     exception = newClassObject(env, &retObj, TKV_CLS,
                   "(Ltachyon/client/TachyonFS;)V", 
                   client->getJObj());

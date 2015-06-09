@@ -58,6 +58,8 @@
 #define BBUF_CLS                    "java/nio/ByteBuffer"
 #define BBUF_ALLOC_METHD            "allocate"
 
+#define DEFAULT_KV_BLOCK_BYTES      8 * 1024 * 1024 // 8MB
+
 namespace tachyon {
 
 enum ReadType {
@@ -96,7 +98,7 @@ typedef OutStream* jOutStream;
 
 class JNIObjBase {
   public:
-    JNIObjBase(JNIEnv * env, jobject localObj) {
+    JNIObjBase(JNIEnv* env, jobject localObj) {
       m_env = env;
       m_obj = env->NewGlobalRef(localObj);
       // this means after the constructor, the localObj will be destroyed
@@ -106,7 +108,7 @@ class JNIObjBase {
     ~JNIObjBase() { m_env->DeleteGlobalRef(m_obj); }
 
     jobject getJObj() { return m_obj; }
-    JNIEnv * getJEnv() { return m_env; }
+    JNIEnv *getJEnv() { return m_env; }
 
   protected:
     JNIEnv *m_env;
@@ -117,6 +119,7 @@ class TachyonClient : public JNIObjBase {
 
   public:
     static jTachyonClient createClient(const char *masterUri);
+    static jTachyonClient copyClient(jTachyonClient client);
 
     jTachyonFile getFile(const char *path);
     jTachyonFile getFile(int fid);
@@ -201,16 +204,29 @@ class TachyonURI : public JNIObjBase {
 
 // non-standard tachyon API
 class TachyonKV : public JNIObjBase {
-
   public:
-    static jTachyonKV createKV(jTachyonClient client);
-    static jTachyonKV createKV(jTachyonClient client, const char *kvStore);
+    ~TachyonKV() {
+      if (m_client != NULL) {
+        delete m_client;
+      }
+    }
 
-    TachyonKV(JNIEnv *env, jobject tkv) : JNIObjBase(env, tkv) {} 
+    static jTachyonKV createKV(jTachyonClient client, ReadType readType, 
+        WriteType writeType, long blockSizeByte = DEFAULT_KV_BLOCK_BYTES, 
+        const char *kvStore = NULL);
+
   
     bool init(); // test if kv store can be initialized before doing r/w
     int get(const char *key, uint32_t keylen, char *buff, uint32_t valuelen);
     void set(const char *key, uint32_t keylen, const char *buff, uint32_t valuelen);
+    jTachyonClient getClient() { return m_client; }
+
+  private:
+    TachyonKV(jTachyonClient client, jobject tkv) : JNIObjBase(client->getJEnv(), tkv) {
+      m_client = TachyonClient::copyClient(client);
+    } 
+
+    jTachyonClient m_client;
 };
 
 

@@ -145,7 +145,8 @@ void testDeleteFile(jTachyonClient client, const char *path, bool recursive)
 
 void testGetSet(jTachyonClient client)
 {
-  jTachyonKV kv = TachyonKV::createKV(client, "/jkv/");
+  jTachyonKV kv = TachyonKV::createKV(client, CACHE, MUST_CACHE, 
+      DEFAULT_KV_BLOCK_BYTES, "/jkv/");
   if (kv == NULL) {
     die("fail to create tachyon kv\n");
   }

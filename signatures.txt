@@ -676,11 +676,11 @@ public final class tachyon.TachyonURI implements java.lang.Comparable<tachyon.Ta
 
 Compiled from "TachyonKV.java"
 public class tachyon.client.TachyonKV {
-  public tachyon.client.TachyonKV(tachyon.client.TachyonFS);
-    Signature: (Ltachyon/client/TachyonFS;)V
+  public tachyon.client.TachyonKV(tachyon.client.TachyonFS, tachyon.client.ReadType, tachyon.client.WriteType, long);
+    Signature: (Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;J)V
 
-  public tachyon.client.TachyonKV(tachyon.client.TachyonFS, java.lang.String);
-    Signature: (Ltachyon/client/TachyonFS;Ljava/lang/String;)V
+  public tachyon.client.TachyonKV(tachyon.client.TachyonFS, tachyon.client.ReadType, tachyon.client.WriteType, long, java.lang.String);
+    Signature: (Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;JLjava/lang/String;)V
 
   public boolean init();
     Signature: ()Z

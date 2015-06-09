@@ -45,6 +45,11 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
   return new TachyonClient(env, ret.l);
 }
 
+jTachyonClient TachyonClient::copyClient(jTachyonClient client)
+{
+  return new TachyonClient(client->getJEnv(), client->getJObj());
+}
+
 jTachyonFile TachyonClient::getFile(const char * path)
 {
   jthrowable exception;
@@ -609,21 +614,30 @@ jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const 
   return new TachyonURI(env, retObj);
 }
 
-jTachyonKV TachyonKV::createKV(jTachyonClient client)
-{
-  return createKV(client, NULL);
-}
-
-jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
+jTachyonKV TachyonKV::createKV(jTachyonClient client, ReadType readType, 
+        WriteType writeType, long blockSizeByte, const char *kvStore)
 {
   JNIEnv *env = client->getJEnv();
-  jobject retObj;
+  jobject retObj, ereadtObj, ewritetObj;
   jthrowable exception;
+
+  exception = enumObjReadType(env, &ereadtObj, readType);
+  if (exception != NULL) {
+    serror("fail to get enum obj for read type");
+    printException(env, exception);
+    return NULL;
+  }
+  exception = enumObjWriteType(env, &ewritetObj, writeType);
+  if (exception != NULL) {
+    serror("fail to get enum obj for write type");
+    printException(env, exception);
+    return NULL;
+  }
 
   if (kvStore == NULL || strlen(kvStore) == 0) {
     exception = newClassObject(env, &retObj, TKV_CLS,
-                  "(Ltachyon/client/TachyonFS;)V", 
-                  client->getJObj());
+                  "(Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;J)V", 
+                  client->getJObj(), ereadtObj, ewritetObj, (jlong) blockSizeByte);
   } else {
     jstring jKVStr = env->NewStringUTF(kvStore);
     if (jKVStr == NULL) {
@@ -631,8 +645,8 @@ jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
       return NULL;
     }
     exception = newClassObject(env, &retObj, TKV_CLS,
-                  "(Ltachyon/client/TachyonFS;Ljava/lang/String;)V", 
-                  client->getJObj(), jKVStr);
+                  "(Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;JLjava/lang/String;)V", 
+                  client->getJObj(), ereadtObj, ewritetObj, (jlong) blockSizeByte, jKVStr);
     env->DeleteLocalRef(jKVStr);
   }
   if (exception != NULL) {
@@ -642,7 +656,7 @@ jTachyonKV TachyonKV::createKV(jTachyonClient client, const char *kvStore)
   }
   if (retObj == NULL)
     return NULL;
-  return new TachyonKV(env, retObj);
+  return new TachyonKV(client, retObj);
 }
 
 bool TachyonKV::init()
@@ -681,7 +695,7 @@ int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuel
   m_env->DeleteLocalRef(jKeyStr);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
-    serror("fail to call TachyonKV.get()");
+    // serror("fail to call TachyonKV.get()");
     printException(m_env, exception);
     return -1;
   }
@@ -717,7 +731,7 @@ void TachyonKV::set(const char *key, uint32_t keylen, const char *buff, uint32_t
   m_env->DeleteLocalRef(jKeyStr);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
-    serror("fail to call TachyonKV.set()");
+    // serror("fail to call TachyonKV.set()");
     printException(m_env, exception);
   }
 }

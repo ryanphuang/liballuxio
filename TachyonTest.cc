@@ -180,14 +180,12 @@ int main(int argc, char*argv[])
     die("fail to create tachyon client");
   }
   char * fullFilePath = fullTachyonPath(masterUri, filePath);
-  /*
   testGetFile(client, fullFilePath);
   testCreateFile(client, writef);
   testWriteFile(client, writef);
   testDeleteFile(client, writef, false);
   testMkdir(client, "/tachyontest");
   testDeleteFile(client, "/tachyontest", true);
-  */
   testGetSet(client);
   delete client;
   return 0;

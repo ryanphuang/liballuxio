@@ -674,8 +674,13 @@ public final class tachyon.TachyonURI implements java.lang.Comparable<tachyon.Ta
     Signature: ()V
 }
 
+
 Compiled from "TachyonKV.java"
 public class tachyon.client.TachyonKV {
+  public static final java.lang.String DEFAULT_KVSTORE;
+    Signature: Ljava/lang/String;
+  public static final int DEFAULT_BUFFER_SIZE;
+    Signature: I
   public tachyon.client.TachyonKV(tachyon.client.TachyonFS, tachyon.client.ReadType, tachyon.client.WriteType, long);
     Signature: (Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;J)V
 
@@ -688,6 +693,27 @@ public class tachyon.client.TachyonKV {
   public void write(java.lang.String, byte[]) throws java.io.IOException;
     Signature: (Ljava/lang/String;[B)V
 
+  public void write(java.lang.String, byte[], int, int) throws java.io.IOException;
+    Signature: (Ljava/lang/String;[BII)V
+
   public int read(java.lang.String, byte[]) throws java.io.IOException;
     Signature: (Ljava/lang/String;[B)I
+
+  public int read(java.lang.String, byte[], int, int) throws java.io.IOException;
+    Signature: (Ljava/lang/String;[BII)I
+
+  public void writeBuffer(java.lang.String, java.nio.ByteBuffer) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Ljava/nio/ByteBuffer;)V
+
+  public void writeBuffer(java.lang.String, java.nio.ByteBuffer, int, int) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Ljava/nio/ByteBuffer;II)V
+
+  public int readBuffer(java.lang.String, java.nio.ByteBuffer) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Ljava/nio/ByteBuffer;)I
+
+  public int readBuffer(java.lang.String, java.nio.ByteBuffer, int, int) throws java.io.IOException;
+    Signature: (Ljava/lang/String;Ljava/nio/ByteBuffer;II)I
+
+  public java.nio.ByteBuffer getReadBuffer();
+    Signature: ()Ljava/nio/ByteBuffer;
 }

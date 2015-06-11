@@ -52,6 +52,9 @@
 #define TKV_INIT_METHD              "init"
 #define TKV_GET_METHD               "read"
 #define TKV_SET_METHD               "write"
+#define TKV_RBUFF_METHD             "readBuffer"
+#define TKV_WBUFF_METHD             "writeBuffer"
+#define TKV_GRBUFF_METHD            "getReadBuffer"
 
 #define TURI_CLS                    "tachyon/TachyonURI"
 

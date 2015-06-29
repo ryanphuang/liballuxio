@@ -257,6 +257,82 @@ bool TachyonFile::isFile()
   return ret.z;
 }
 
+bool TachyonFile::isComplete()
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_ISCOMPLETE_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.isComplete()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonFile::isDirectory()
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_ISDIRECTORY_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.isDirectory()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonFile::isInMemory()
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_ISINMEMORY_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.isInMemory()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonFile::needPin()
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_NEEDPIN_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.needPin()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+bool TachyonFile::recache()
+{
+  jthrowable exception;
+  jvalue ret;
+
+  exception = callMethod(m_env, &ret, m_obj, TFILE_CLS, TFILE_RECACHE_METHD,
+                "()Z", false);
+  if (exception != NULL) {
+    serror("fail to call TachyonFile.recache()");
+    printException(m_env, exception);
+    return false;
+  }
+  return ret.z;
+}
+
+
 char * TachyonFile::getPath()
 {
   jthrowable exception;

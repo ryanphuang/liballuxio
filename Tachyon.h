@@ -24,6 +24,12 @@
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
 #define TFILE_LENGTH_METHD          "length"
 #define TFILE_ISFILE_METHD          "isFile"
+#define TFILE_ISCOMPLETE_METHD      "isComplete"
+#define TFILE_ISDIRECTORY_METHD     "isDirectory"
+#define TFILE_ISINMEMORY_METHD      "isInMemory"
+#define TFILE_NEEDPIN_METHD         "needPin"
+#define TFILE_RECACHE_METHD         "recache"
+
 #define TFILE_PATH_METHD            "getPath"
 #define TFILE_RBB_METHD             "readByteBuffer"
 #define TFILE_GIS_METHD             "getInStream"
@@ -148,8 +154,25 @@ class TachyonFile : public JNIObjBase {
     TachyonFile(JNIEnv *env, jobject tfile) : JNIObjBase(env, tfile){}
     
     long length();
-    bool isFile();
+
     char * getPath();
+    
+    bool isFile();
+    bool isInMemory(); 
+    bool isComplete(); 
+    bool isDirectory(); 
+    bool needPin();    
+    bool recache();                    
+    
+    int hashCode();    //TODO 
+    bool promoteBlock(int blockIndex); //TODO
+    bool rename(const char* path);     //TODO
+    char* getLocalFilename(int blockIndex); //TODO
+    int getNumberOfBlocks();          //TODO
+    char* toString();                 //TODO
+    long getBlockSizeByte();          //TODO
+    long getCreationTimeMs();         //TODO
+    int getDiskReplication();         //TODO
     
     jTachyonByteBuffer readByteBuffer(int blockIndex);
     jInStream getInStream(ReadType readType);

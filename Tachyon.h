@@ -46,12 +46,11 @@
 #define TISTREAM_CLOSE_METHD        "close"
 #define TISTREAM_SEEK_METHD         "seek"
 #define TISTREAM_SKIP_METHD         "skip"
-
 #define TFILE_ISTREAM_CLS           "tachyon/client/FileInStream"
-#define TFILE_ISTREAM_READ_METHD    "read"
-#define TFILE_ISTREAM_CLOSE_METHD   "close"
-#define TFILE_ISTREAM_SEEK_METHD    "seek"
-#define TFILE_ISTREAM_SKIP_METHD    "skip"
+#define TBLOCK_ISTREAM_CLS          "tachyon/client/BlockInStream"
+#define TLOCAL_BLOCK_ISTREAM_CLS    "tachyon/client/LocalBlockInStream"
+#define TREMOTE_BLOCK_ISTREAM_CLS   "tachyon/client/RemoteBlockInStream"
+#define TEMPTY_BLOCK_ISTREAM_CLS    "tachyon/client/EmptyBlockInStream"
 
 #define TOSTREAM_CLS                "tachyon/client/OutStream"
 #define TOSTREAM_WRITE_METHD        "write"
@@ -217,12 +216,48 @@ class InStream : public JNIObjBase {
     int read(void *buff, int length, int off, int maxLen);
     void seek(long pos);
     long skip(long n);
+  
   protected:
-    void close(const char* clsname);
-    int read(const char* clsname);
-    int read(const char* clsname, void *buff, int length, int off, int maxLen);
-    void seek(const char* clsname, long pos);
-    long skip(const char* clsname, long n); 
+    void closeImpl(const char* clsname);
+    int readImpl(const char* clsname);
+    int readImpl(const char* clsname, void *buff, int length, int off, int maxLen);
+    void seekImpl(const char* clsname, long pos);
+    long skipImpl(const char* clsname, long n); 
+};
+
+class FileInStream : public InStream {
+    void close();
+    int read();
+    int read(void *buff, int length, int off, int maxLen);
+    void seek(long pos);
+    long skip(long n);
+};
+
+class EmptyBlockInStream : public InStream {
+    void close();
+    int read();
+    int read(void *buff, int length, int off, int maxLen);
+    void seek(long pos);
+    long skip(long n);
+};
+
+class BlockInStream : public InStream {
+};
+
+class LocalBlockInStream : public BlockInStream {
+    void close();
+    int read();
+    int read(void *buff, int length, int off, int maxLen);
+    void seek(long pos);
+    long skip(long n);
+};
+
+class RemoteBlockInStream : public BlockInStream {
+    void close();
+    int read();
+    int read(void *buff, int length, int off, int maxLen);
+    void seek(long pos);
+    long skip(long n);
 };
 
 class OutStream : public JNIObjBase {
@@ -237,28 +272,10 @@ class OutStream : public JNIObjBase {
     void write(const void *buff, int length, int off, int maxLen);
 };
 
-class FileInStream : public InStream {
-  //TODO: perhaps we need to have some basic methods because the
-  //the override methods are extremely similar but only differs 
-  //at the method name
-};
-
 class FileOutStream : public OutStream {
 };
 
-class BlockInStream : public InStream {
-};
-
 class BlockOutStream : public OutStream {
-};
-
-class EmptyBlockInStream : public InStream {
-};
-
-class LocalBlockInStream : public BlockInStream {
-};
-
-class RemoteBlockInStream : public BlockInStream {
 };
 
 class TachyonURI : public JNIObjBase {

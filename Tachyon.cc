@@ -479,7 +479,11 @@ jByteBuffer ByteBuffer::allocate(int capacity)
   return new ByteBuffer(env, ret.l);
 }
 
-int InStream::read(const char* clsname) 
+//////////////////////////////////////////
+//InStream
+//////////////////////////////////////////
+
+int InStream::readImpl(const char* clsname) 
 {
   jthrowable exception;
   jvalue ret;
@@ -494,17 +498,7 @@ int InStream::read(const char* clsname)
   return ret.i;
 }
 
-int InStream::read()
-{
-  return read(TISTREAM_CLS);
-}
-
-int InStream::read(void *buff, int length)
-{
-  return read(buff, length, 0, length);
-}
-
-int InStream::read(const char* clsname, void *buff, int length, int off, int maxLen)
+int InStream::readImpl(const char* clsname, void *buff, int length, int off, int maxLen)
 {
   jthrowable exception;
   jbyteArray jBuf;
@@ -537,33 +531,19 @@ int InStream::read(const char* clsname, void *buff, int length, int off, int max
   return rdSz;
 }
 
-int InStream::read(void *buff, int length, int off, int maxLen) {
-  return read(TISTREAM_CLS, buff, length, off, maxLen);
-}
-
-void InStream::close(const char* clsname)
+void InStream::closeImpl(const char* clsname)
 {
   callMethod(m_env, NULL, m_obj, clsname, TISTREAM_CLOSE_METHD, 
       "()V", false);
 }
 
-void InStream::close()
-{
-  close(TISTREAM_CLS);
-}
-
-void InStream::seek(const char* clsname, long pos)
+void InStream::seekImpl(const char* clsname, long pos)
 {
   callMethod(m_env, NULL, m_obj, clsname, TISTREAM_SEEK_METHD, 
       "(J)V", false, (jlong) pos);
 }
 
-void InStream::seek(long pos)
-{
-  seek(TISTREAM_CLS, pos);
-}
-
-long InStream::skip(const char* clsname, long n)
+long InStream::skipImpl(const char* clsname, long n)
 {
   jthrowable exception;
   jvalue ret;
@@ -578,10 +558,159 @@ long InStream::skip(const char* clsname, long n)
   return ret.j;
 }
 
+
+////////////////////////////////////////////////
+// Call the protected template methods
+////////////////////////////////////////////////
+
+int InStream::read()
+{
+  return readImpl(TISTREAM_CLS);
+}
+
+int InStream::read(void *buff, int length, int off, int maxLen) 
+{
+  return readImpl(TISTREAM_CLS, buff, length, off, maxLen);
+}
+
+int InStream::read(void *buff, int length)
+{
+  return read(buff, length, 0, length);
+}
+
+void InStream::close()
+{
+  closeImpl(TISTREAM_CLS);
+}
+
+void InStream::seek(long pos)
+{
+  seekImpl(TISTREAM_CLS, pos);
+}
+
 long InStream::skip(long n)
 {
-  return skip(TISTREAM_CLS, n);
+  return skipImpl(TISTREAM_CLS, n);
 }
+
+//////////////////////////////////////////
+// FileInStream
+//////////////////////////////////////////
+
+int FileInStream::read()
+{
+  return readImpl(TFILE_ISTREAM_CLS);
+}
+
+int FileInStream::read(void *buff, int length, int off, int maxLen) 
+{
+  return readImpl(TFILE_ISTREAM_CLS, buff, length, off, maxLen);
+}
+
+void FileInStream::close()
+{
+  closeImpl(TFILE_ISTREAM_CLS);
+}
+
+long FileInStream::skip(long n)
+{
+  return skipImpl(TFILE_ISTREAM_CLS, n);
+}
+
+void FileInStream::seek(long pos)
+{
+  seekImpl(TFILE_ISTREAM_CLS, pos);
+}
+
+//////////////////////////////////////////
+// EmptyBlockInStream
+//////////////////////////////////////////
+
+int EmptyBlockInStream::read()
+{
+  return readImpl(TEMPTY_BLOCK_ISTREAM_CLS);
+}
+
+int EmptyBlockInStream::read(void *buff, int length, int off, int maxLen) 
+{
+  return readImpl(TEMPTY_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+}
+
+void EmptyBlockInStream::close()
+{
+  closeImpl(TEMPTY_BLOCK_ISTREAM_CLS);
+}
+
+long EmptyBlockInStream::skip(long n)
+{
+  return skipImpl(TEMPTY_BLOCK_ISTREAM_CLS, n);
+}
+
+void EmptyBlockInStream::seek(long pos)
+{
+  seekImpl(TEMPTY_BLOCK_ISTREAM_CLS, pos);
+}
+
+//////////////////////////////////////////
+// LocalBlockInStream
+//////////////////////////////////////////
+
+int LocalBlockInStream::read()
+{
+  return readImpl(TLOCAL_BLOCK_ISTREAM_CLS);
+}
+
+int LocalBlockInStream::read(void *buff, int length, int off, int maxLen) 
+{
+  return readImpl(TLOCAL_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+}
+
+void LocalBlockInStream::close()
+{
+  closeImpl(TLOCAL_BLOCK_ISTREAM_CLS);
+}
+
+long LocalBlockInStream::skip(long n)
+{
+  return skipImpl(TLOCAL_BLOCK_ISTREAM_CLS, n);
+}
+
+void LocalBlockInStream::seek(long pos)
+{
+  seekImpl(TLOCAL_BLOCK_ISTREAM_CLS, pos);
+}
+
+//////////////////////////////////////////
+// RemoteBlockInStream
+//////////////////////////////////////////
+
+int RemoteBlockInStream::read()
+{
+  return readImpl(TREMOTE_BLOCK_ISTREAM_CLS);
+}
+
+int RemoteBlockInStream::read(void *buff, int length, int off, int maxLen) 
+{
+  return readImpl(TREMOTE_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+}
+
+void RemoteBlockInStream::close()
+{
+  closeImpl(TREMOTE_BLOCK_ISTREAM_CLS);
+}
+
+long RemoteBlockInStream::skip(long n)
+{
+  return skipImpl(TREMOTE_BLOCK_ISTREAM_CLS, n);
+}
+
+void RemoteBlockInStream::seek(long pos)
+{
+  seekImpl(TREMOTE_BLOCK_ISTREAM_CLS, pos);
+}
+//////////////////////////////////////////
+// OutStream
+//////////////////////////////////////////
 
 void OutStream::cancel()
 {

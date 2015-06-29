@@ -123,7 +123,7 @@ int TachyonClient::getFileId(const char *path)
   if (exception != NULL) {
     verror("fail to call TachyonFS.getFileId() for %s\n", path);
     printException(m_env, exception);
-    return NULL;
+    return 0;
   }
   return ret.i;
 }
@@ -479,12 +479,12 @@ jByteBuffer ByteBuffer::allocate(int capacity)
   return new ByteBuffer(env, ret.l);
 }
 
-int InStream::read() 
+int InStream::read(const char* clsname) 
 {
   jthrowable exception;
   jvalue ret;
 
-  exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
+  exception = callMethod(m_env, &ret, m_obj, clsname, TISTREAM_READ_METHD,
                 "()I", false);
   if (exception != NULL) {
     serror("fail to call InStream.Read()");
@@ -494,12 +494,17 @@ int InStream::read()
   return ret.i;
 }
 
+int InStream::read()
+{
+  return read(TISTREAM_CLS);
+}
+
 int InStream::read(void *buff, int length)
 {
   return read(buff, length, 0, length);
 }
 
-int InStream::read(void *buff, int length, int off, int maxLen)
+int InStream::read(const char* clsname, void *buff, int length, int off, int maxLen)
 {
   jthrowable exception;
   jbyteArray jBuf;
@@ -513,10 +518,10 @@ int InStream::read(void *buff, int length, int off, int maxLen)
   }
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, clsname, TISTREAM_READ_METHD,
                   "([B)I", false, jBuf);
   else
-    exception = callMethod(m_env, &ret, m_obj, TISTREAM_CLS, TISTREAM_READ_METHD,
+    exception = callMethod(m_env, &ret, m_obj, clsname, TISTREAM_READ_METHD,
                   "([BII)I", false, jBuf, off, maxLen);
   if (exception != NULL) {
     m_env->DeleteLocalRef(jBuf);
@@ -532,24 +537,38 @@ int InStream::read(void *buff, int length, int off, int maxLen)
   return rdSz;
 }
 
+int InStream::read(void *buff, int length, int off, int maxLen) {
+  return read(TISTREAM_CLS, buff, length, off, maxLen);
+}
+
+void InStream::close(const char* clsname)
+{
+  callMethod(m_env, NULL, m_obj, clsname, TISTREAM_CLOSE_METHD, 
+      "()V", false);
+}
+
 void InStream::close()
 {
-  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_CLOSE_METHD, 
-      "()V", false);
+  close(TISTREAM_CLS);
+}
+
+void InStream::seek(const char* clsname, long pos)
+{
+  callMethod(m_env, NULL, m_obj, clsname, TISTREAM_SEEK_METHD, 
+      "(J)V", false, (jlong) pos);
 }
 
 void InStream::seek(long pos)
 {
-  callMethod(m_env, NULL, m_obj, TISTREAM_CLS, TISTREAM_SEEK_METHD, 
-      "(J)V", false, (jlong) pos);
+  seek(TISTREAM_CLS, pos);
 }
 
-long InStream::skip(long n)
+long InStream::skip(const char* clsname, long n)
 {
   jthrowable exception;
   jvalue ret;
   
-  exception = callMethod(m_env, NULL, m_obj, TISTREAM_CLS, 
+  exception = callMethod(m_env, NULL, m_obj, clsname, 
                 TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
   if (exception != NULL) {
     serror("fail to call InStream.skip()");
@@ -557,6 +576,11 @@ long InStream::skip(long n)
     return -1;
   }
   return ret.j;
+}
+
+long InStream::skip(long n)
+{
+  return skip(TISTREAM_CLS, n);
 }
 
 void OutStream::cancel()

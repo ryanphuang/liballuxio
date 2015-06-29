@@ -47,11 +47,23 @@
 #define TISTREAM_SEEK_METHD         "seek"
 #define TISTREAM_SKIP_METHD         "skip"
 
+#define TFILE_ISTREAM_CLS           "tachyon/client/FileInStream"
+#define TFILE_ISTREAM_READ_METHD    "read"
+#define TFILE_ISTREAM_CLOSE_METHD   "close"
+#define TFILE_ISTREAM_SEEK_METHD    "seek"
+#define TFILE_ISTREAM_SKIP_METHD    "skip"
+
 #define TOSTREAM_CLS                "tachyon/client/OutStream"
 #define TOSTREAM_WRITE_METHD        "write"
 #define TOSTREAM_CLOSE_METHD        "close"
 #define TOSTREAM_FLUSH_METHD        "flush"
 #define TOSTREAM_CANCEL_METHD       "cancel"
+
+#define TFILE_OSTREAM_CLS           "tachyon/client/FileOutStream"
+#define TFILE_OSTREAM_WRITE_METHD   "write"
+#define TFILE_OSTREAM_CLOSE_METHD   "close"
+#define TFILE_OSTREAM_FLUSH_METHD   "flush"
+#define TFILE_OSTREAM_CANCEL_METHD  "cancel"
 
 // non-standard Tachyon API
 #define TKV_CLS                     "tachyon/client/TachyonKV"
@@ -205,6 +217,12 @@ class InStream : public JNIObjBase {
     int read(void *buff, int length, int off, int maxLen);
     void seek(long pos);
     long skip(long n);
+  protected:
+    void close(const char* clsname);
+    int read(const char* clsname);
+    int read(const char* clsname, void *buff, int length, int off, int maxLen);
+    void seek(const char* clsname, long pos);
+    long skip(const char* clsname, long n); 
 };
 
 class OutStream : public JNIObjBase {
@@ -217,6 +235,30 @@ class OutStream : public JNIObjBase {
     void write(int byte);
     void write(const void *buff, int length);
     void write(const void *buff, int length, int off, int maxLen);
+};
+
+class FileInStream : public InStream {
+  //TODO: perhaps we need to have some basic methods because the
+  //the override methods are extremely similar but only differs 
+  //at the method name
+};
+
+class FileOutStream : public OutStream {
+};
+
+class BlockInStream : public InStream {
+};
+
+class BlockOutStream : public OutStream {
+};
+
+class EmptyBlockInStream : public InStream {
+};
+
+class LocalBlockInStream : public BlockInStream {
+};
+
+class RemoteBlockInStream : public BlockInStream {
 };
 
 class TachyonURI : public JNIObjBase {

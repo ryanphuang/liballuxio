@@ -559,9 +559,7 @@ long InStream::skipImpl(const char* clsname, long n)
 }
 
 
-////////////////////////////////////////////////
-// Call the protected template methods
-////////////////////////////////////////////////
+// Call the templates
 
 int InStream::read()
 {
@@ -708,41 +706,37 @@ void RemoteBlockInStream::seek(long pos)
 {
   seekImpl(TREMOTE_BLOCK_ISTREAM_CLS, pos);
 }
+
 //////////////////////////////////////////
 // OutStream
 //////////////////////////////////////////
 
-void OutStream::cancel()
+void OutStream::cancelImpl(const char* clsname)
 {
-  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CANCEL_METHD, 
+  callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_CANCEL_METHD, 
       "()V", false);
 }
 
-void OutStream::close()
+void OutStream::closeImpl(const char* clsname)
 {
-  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_CLOSE_METHD, 
+  callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_CLOSE_METHD, 
       "()V", false);
 }
 
-void OutStream::flush()
+void OutStream::flushImpl(const char* clsname)
 {
-  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_FLUSH_METHD, 
+  callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_FLUSH_METHD, 
       "()V", false);
 }
 
 
-void OutStream::write(int byte) 
+void OutStream::writeImpl(const char* clsname, int byte) 
 {
-  callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+  callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
       "(I)V", false, (jint) byte);
 }
 
-void OutStream::write(const void *buff, int length)
-{
-  write(buff, length, 0, length);
-}
-
-void OutStream::write(const void *buff, int length, int off, int maxLen)
+void OutStream::writeImpl(const char* clsname, const void *buff, int length, int off, int maxLen)
 {
   jthrowable exception;
   jbyteArray jBuf;
@@ -760,10 +754,10 @@ void OutStream::write(const void *buff, int length, int off, int maxLen)
   // printf("byte array in write: %s\n", jbuff);
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+    exception = callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
                   "([B)V", false, jBuf);
   else
-    exception = callMethod(m_env, NULL, m_obj, TOSTREAM_CLS, TOSTREAM_WRITE_METHD,
+    exception = callMethod(m_env, NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
                   "([BII)V", false, jBuf, (jint) off, (jint) maxLen);
   m_env->DeleteLocalRef(jBuf);
   if (exception != NULL) {
@@ -771,6 +765,85 @@ void OutStream::write(const void *buff, int length, int off, int maxLen)
     printException(m_env, exception);
   }
 }
+
+// Call the templates
+
+void OutStream::cancel() 
+{
+  cancelImpl(TOSTREAM_CLS);
+}
+
+void OutStream::close()
+{
+  closeImpl(TOSTREAM_CLS);
+}
+
+void OutStream::flush()
+{
+  flushImpl(TOSTREAM_CLS);
+}
+
+void OutStream::write(const void *buff, int length, int off, int maxLen)
+{
+  writeImpl(TOSTREAM_CLS, buff, length, off, maxLen);
+}
+
+void OutStream::write(const void *buff, int length)
+{
+  write(buff, length, 0, length);
+}
+
+//////////////////////////////////////////
+// FileOutStream
+//////////////////////////////////////////
+
+void FileOutStream::cancel() 
+{
+  cancelImpl(TFILE_OSTREAM_CLS);
+}
+
+void FileOutStream::close()
+{
+  closeImpl(TFILE_OSTREAM_CLS);
+}
+
+void FileOutStream::flush()
+{
+  flushImpl(TFILE_OSTREAM_CLS);
+}
+
+void FileOutStream::write(const void *buff, int length, int off, int maxLen)
+{
+  writeImpl(TFILE_OSTREAM_CLS, buff, length, off, maxLen);
+}
+
+//////////////////////////////////////////
+// BlockOutStream
+//////////////////////////////////////////
+
+void BlockOutStream::cancel() 
+{
+  cancelImpl(TBLOCK_OSTREAM_CLS);
+}
+
+void BlockOutStream::close()
+{
+  closeImpl(TBLOCK_OSTREAM_CLS);
+}
+
+void BlockOutStream::flush()
+{
+  flushImpl(TBLOCK_OSTREAM_CLS);
+}
+
+void BlockOutStream::write(const void *buff, int length, int off, int maxLen)
+{
+  writeImpl(TBLOCK_OSTREAM_CLS, buff, length, off, maxLen);
+}
+
+//////////////////////////////////////////
+// TachyonURI
+//////////////////////////////////////////
 
 jTachyonURI TachyonURI::newURI(const char *pathStr)
 {

@@ -41,6 +41,7 @@
 #define TREADT_CLS                  "tachyon/client/ReadType"
 #define TWRITET_CLS                 "tachyon/client/WriteType"
 
+// InStream
 #define TISTREAM_CLS                "tachyon/client/InStream"
 #define TISTREAM_READ_METHD         "read"
 #define TISTREAM_CLOSE_METHD        "close"
@@ -52,17 +53,14 @@
 #define TREMOTE_BLOCK_ISTREAM_CLS   "tachyon/client/RemoteBlockInStream"
 #define TEMPTY_BLOCK_ISTREAM_CLS    "tachyon/client/EmptyBlockInStream"
 
+// OutStream
 #define TOSTREAM_CLS                "tachyon/client/OutStream"
 #define TOSTREAM_WRITE_METHD        "write"
 #define TOSTREAM_CLOSE_METHD        "close"
 #define TOSTREAM_FLUSH_METHD        "flush"
 #define TOSTREAM_CANCEL_METHD       "cancel"
-
 #define TFILE_OSTREAM_CLS           "tachyon/client/FileOutStream"
-#define TFILE_OSTREAM_WRITE_METHD   "write"
-#define TFILE_OSTREAM_CLOSE_METHD   "close"
-#define TFILE_OSTREAM_FLUSH_METHD   "flush"
-#define TFILE_OSTREAM_CANCEL_METHD  "cancel"
+#define TBLOCK_OSTREAM_CLS          "tachyon/client/BlockOutStream"
 
 // non-standard Tachyon API
 #define TKV_CLS                     "tachyon/client/TachyonKV"
@@ -270,12 +268,34 @@ class OutStream : public JNIObjBase {
     void write(int byte);
     void write(const void *buff, int length);
     void write(const void *buff, int length, int off, int maxLen);
+
+  protected:
+    void cancelImpl(const char* clsname);
+    void closeImpl(const char* clsname);
+    void flushImpl(const char* clsname);
+    void writeImpl(const char* clsname, int byte);
+    void writeImpl(const char* clsname, const void *buff, int length, int off, int maxLen);
 };
 
 class FileOutStream : public OutStream {
+    void cancel();
+    void close();
+    void flush();
+    void write(int byte);
+    void write(const void *buff, int length, int off, int maxLen);
 };
 
-class BlockOutStream : public OutStream {
+class BlockOutStream : public OutStream { 
+    void cancel();
+    void close();
+    void flush();
+    void write(int byte);
+    void write(const void *buff, int length, int off, int maxLen);
+
+    bool canWrite(); //TODO
+    long getBlockId(); //TODO
+    long getBlockOffset(); //TODO
+    long getRemainingSpaceByte(); //TODO
 };
 
 class TachyonURI : public JNIObjBase {

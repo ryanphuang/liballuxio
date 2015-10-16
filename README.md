@@ -17,4 +17,7 @@ Then make sure the Tachyon Java client jar is in the `CLASSPATH`: e.g.,
 
 `tachyontest` is a sample client executable that test the implemented C/C++ Tachyon APIs.
 
+For an actual usage example of the C++ client, refer to the [load generator](https://github.com/stormspirit/imembench/blob/master/loadgenerator/tachyondriver.cc) we implemented in the [imembench](https://github.com/stormspirit/imembench) project based on this client.
+
+
 

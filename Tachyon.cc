@@ -222,7 +222,7 @@ bool TachyonClient::deletePath(int fid, bool recursive)
   if (exception != NULL) {
     verror("fail to call TachyonFS.delete() for fid %d\n", fid);
     printException(m_env, exception);
-    return NULL;
+    return false;
   }
   return ret.z;
 }

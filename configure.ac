@@ -11,7 +11,8 @@ AC_CANONICAL_TARGET
 AC_LANG([C++])
 
 AM_INIT_AUTOMAKE(foreign)
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile
+                 src/Makefile])
 
 LT_PREREQ([2.2])
 LT_INIT

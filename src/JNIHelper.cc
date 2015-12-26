@@ -11,235 +11,306 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <map>
 
-JNIEnv* globalEnv = NULL;
+#include <string>
+#include <sstream>
 
-typedef std::map<const char *, void *> HashMap;
-typedef std::map<const char *, void *>::iterator MapIter;
-typedef std::pair<const char *, void *> KVPair;
+using namespace Tachyon::JNI;
 
-HashMap globalClsMap;
-
-void * mapGet(HashMap& map, const char * key)
+ClassNotFoundException::ClassNotFoundException(const char* className)
 {
-  MapIter it = map.find(key);
-  if (it == map.end()) {
-    return NULL;
-  }
-  return it->second;
+  std::ostringstream ss;
+  ss << "Could not find class " << className;
+  m_msg = ss.str();
 }
 
-void mapPut(HashMap& map, const char * key, void * value)
+MethodNotFoundException::MethodNotFoundException(const char* className, 
+    const char* methodName) 
 {
-  map.insert(KVPair(key, value));
+  std::ostringstream ss;
+  ss << "Could not find method " << methodName << " in class " << className; 
+  m_msg = ss.str();
 }
 
-// Create a JNI env. 
-//
-// Reference: http://www.inonit.com/cygwin/jni/invocationApi/c.html
-JNIEnv* createJNIEnv() 
+NewGlobalRefException::NewGlobalRefException(const char* refName)
 {
-  JavaVM* jvm;
-  JNIEnv* env;
-  
-  JavaVMInitArgs args;
-  JavaVMOption options[1];
-
-  const char *classpath_prefix = "-Djava.class.path=";
-  char *classpath;
-  char *classpath_arg;
-
-  jint err = 0;
-
-  args.version = JNI_VERSION_1_2;
-  args.nOptions = 1;
-  classpath = getenv("CLASSPATH"); // read CLASSPATH env variable
-  if (classpath == NULL) {
-    die("CLASSPATH env variable is not set!");
-  }
-  classpath_arg = concat(classpath_prefix, classpath);
-  if (classpath_arg == NULL) {
-    die("fail to allocate classpath arg string");
-  }
-  options[0].optionString = classpath_arg;
-  args.options = options;
-  
-  err = JNI_CreateJavaVM(&jvm, (void **) &env, &args);
-
-  // before checking return value, we should free the allocated string
-  free(classpath_arg);
-
-  if (err != 0) {
-    die("fail to create JVM");
-  }
-  return env;
+  std::ostringstream ss;
+  ss << "Could not create global reference for " << refName;
+  m_msg = ss.str();
 }
 
-// TODO: not thread-safe
-JNIEnv* getJNIEnv()
+NewObjectException::NewObjectException(const char* className)
 {
-  if (globalEnv == NULL) {
-    globalEnv = createJNIEnv();
+  std::ostringstream ss;
+  ss << "Could not create object for class " << className;
+  m_msg = ss.str();
+}
+
+NewEnumException::NewEnumException(const char* className, const char * valueName) 
+{
+  std::ostringstream ss;
+  ss << "Could not create enum for " << valueName << " of class " << className;
+  m_msg = ss.str();
+}
+
+FieldNotFoundException::FieldNotFoundException(const char* className, 
+    const char* fieldName) 
+{
+  std::ostringstream ss;
+  ss << "Could not find field " << fieldName << " in class " << className;
+  m_msg = ss.str();
+}
+
+jclass GlobalClassCache::get(const char *className, Env* env)
+{
+  m_lock.lock();
+  std::map<const char *, void *>::iterator it = m_cls_map.find(className);
+  if (it != m_cls_map.end()) {
+    // found in cache
+    m_lock.unlock();
+    return (jclass) it->second;
   }
-  return globalEnv;
+  // cache miss, find the class and put into cache
+  try {
+    jclass cls = env->findClass(className);
+    if (cls == NULL) {
+      throw ClassNotFoundException(className);
+    }
+    // find in env, first create a global reference (otherwise, the reference 
+    // will be can be dangling), then update cache
+    jclass globalCls = (jclass) env->newGlobalRef(cls);
+    if (globalCls == NULL) {
+      throw NewGlobalRefException(className);
+    }
+    env->deleteLocalRef(cls); // delete local reference
+    m_cls_map.insert(std::pair<const char *, void *>(className, globalCls));
+    m_lock.unlock();
+    return globalCls;
+  } catch (...) { 
+    m_lock.unlock(); // unlock before re-throw
+    throw;
+  }
 }
 
-jthrowable getAndClearException(JNIEnv *env)
+bool GlobalClassCache::set(const char *className, jclass cls)
 {
-  jthrowable exception = env->ExceptionOccurred();
-  if (!exception)
-    return NULL;
-  env->ExceptionClear();
-  return exception;
+  m_lock.lock();
+  m_cls_map.insert(std::pair<const char *, void *>(className, cls));
+  m_lock.unlock();
+  return true;
 }
 
-jthrowable getMethodId(JNIEnv *env, jmethodID *methodIdOut, const char *className,
-                const char *methodName, const char *methodSignature, bool isStatic)
+Env::Env()
+{
+  m_env = JNIHelper::get().getEnv();
+}
+
+jclass Env::findClass(const char* className)
+{
+  jclass cls = m_env->FindClass(className);
+  if (m_env->ExceptionCheck()) {
+    m_env->ExceptionClear();
+    throw ClassNotFoundException(className);
+  }
+  return cls;
+}
+
+jclass Env::findClassAndCache(const char* className)
+{
+  return JNIHelper::get().getClassCache()->get(className, this);
+}
+
+jmethodID Env::getMethodId(const char *className, const char *methodName, 
+                          const char *methodSignature, bool isStatic)
 {
   jclass cls;
   jthrowable exception;
   jmethodID mid;
 
-  exception = getClass(env, &cls, className);
-  if (exception != NULL)
-    return exception; 
-  if (isStatic) {
-    // find the static method
-    mid = env->GetStaticMethodID(cls, methodName, methodSignature);
-  } else {
-    // find the instance method
-    mid = env->GetMethodID(cls, methodName, methodSignature);
+  try {
+    cls = findClassAndCache(className);
+    if (isStatic) {
+      // find the static method
+      mid = m_env->GetStaticMethodID(cls, methodName, methodSignature);
+    } else {
+      // find the instance method
+      mid = m_env->GetMethodID(cls, methodName, methodSignature);
+    }
+    checkExceptionAndClear();
+  } catch (...) {
+    // re-throw as MethodNotFoundException
+    throw MethodNotFoundException(className, methodName);
   }
   if (mid == 0) {
-    exception = getAndClearException(env);
-  } else {
-    *methodIdOut = mid;
-    exception = NULL;
+    // 0 represents invalid method id
+    throw MethodNotFoundException(className, methodName);
   }
-  return exception;
+  return mid;
 }
 
-jthrowable getClass(JNIEnv *env, jclass *clsOut, const char *className)
+jobject Env::newGlobalRef(jobject obj)
 {
-  jthrowable exception = NULL;
-  jclass cls = NULL;
-
-  cls = (jclass) mapGet(globalClsMap, className);
-  if (cls != NULL) { // found in cache
-    *clsOut = cls;
-    return exception;
-  } else {
-    // not in cache, find from env
-    cls = env->FindClass(className);
-    if (cls == NULL) {
-      // still can't find from env
-      exception = getAndClearException(env);
+  jobject ret = m_env->NewGlobalRef(obj);
+  if (m_env->ExceptionCheck()) {
+    m_env->ExceptionClear();
+    jclass cls = m_env->GetObjectClass(obj);
+    std::string nameStr;
+    if (getClassName(cls, obj, nameStr)) {
+      throw NewGlobalRefException(nameStr.c_str());
     } else {
-      // find in env, first create a global reference (otherwise, the reference will be
-      // can be dangling), then update cache
-      jclass globalCls = (jclass) env->NewGlobalRef(cls);
-      if (globalCls == NULL) {
-        exception = getAndClearException(env);
-      } else {
-        mapPut(globalClsMap, className, globalCls);
-        *clsOut = globalCls;
-        env->DeleteLocalRef(cls); // delete local reference
-      }
+      throw NewGlobalRefException("unknown class");
     }
   }
-  return exception;
+  return ret;
 }
 
-jthrowable newClassObject(JNIEnv *env, jobject *objOut, const char *className,
-              const char *ctorSignature, ...)
+void Env::deleteLocalRef(jobject obj)
+{
+  m_env->DeleteLocalRef(obj);
+}
+
+bool Env::jstringToString(jstring str, std::string& cStr)
+{
+  if (str != NULL) {
+    const char* buf = m_env->GetStringUTFChars(str, NULL);
+    if (buf != NULL) {
+      cStr += buf;
+      m_env->ReleaseStringUTFChars(str, buf); 
+    }
+  }
+  return true;
+}
+
+bool Env::getClassName(jclass cls, jobject instance, std::string& nameStr)
+{
+  jmethodID mid = m_env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
+  jobject clsObj = m_env->CallObjectMethod(instance, mid);
+  // the getName method should be called on the base class instead of the
+  // this object
+  jclass baseCls = m_env->GetObjectClass(clsObj); // find the base class
+  mid = m_env->GetMethodID(baseCls, "getName", "()Ljava/lang/String;");
+  jstring clsName = (jstring) m_env->CallObjectMethod(clsObj, mid);
+  return jstringToString(clsName, nameStr);
+}
+
+bool Env::throwableToString(jthrowable except, std::string& exceptStr)
+{
+  jclass cls = m_env->GetObjectClass(except);
+  std::string nameStr;
+  if (!getClassName(cls, except, nameStr)) {
+    return false;
+  }
+  jmethodID mid = m_env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
+  jstring jmsg = (jstring) m_env->CallObjectMethod(except, mid);
+  std::string msgStr;
+  if (!jstringToString(jmsg, msgStr)) {
+    return false;
+  }
+  exceptStr = nameStr + ": " + msgStr;
+  return true;
+}
+
+
+void Env::checkException()
+{
+  jthrowable except = m_env->ExceptionOccurred();
+  if (except) {
+    throw JavaThrowableException(m_env, except);
+  }
+}
+
+void Env::checkExceptionAndClear()
+{
+  jthrowable except = m_env->ExceptionOccurred();
+  if (except) {
+    // clear the exception in Java before throwing it into C++
+    m_env->ExceptionClear();
+    throw JavaThrowableException(m_env, except);
+  }
+}
+
+void Env::checkExceptionAndAbort()
+{
+  jthrowable except = m_env->ExceptionOccurred();
+  if (except) {
+    // m_env->ExceptionDescribe();
+    m_env->ExceptionClear();
+    std::string exceptStr = "Abort due to JNI exception in ";
+    throwableToString(except, exceptStr);
+    throw std::runtime_error(exceptStr.c_str());
+  }
+}
+
+void Env::checkExceptionAndPrint()
+{
+  jthrowable except = m_env->ExceptionOccurred();
+  if (except) {
+    m_env->ExceptionClear();
+    std::string exceptStr;
+    throwableToString(except, exceptStr);
+    fprintf(stderr, "Exception occurred in Java %s\n", exceptStr.c_str());
+  }
+}
+
+jobject Env::newClassObject(const char *className, const char *ctorSignature, ...)
 {
   va_list args;
-  jthrowable exception;
   jclass cls; // need class for new object
   jmethodID mid;
   jobject obj;
 
-  exception = getClass(env, &cls, className);
-  if (exception != NULL) {
-    return exception;
-  }
-
-  exception = getMethodId(env, &mid, className, CTORNAME, ctorSignature, false);
-  if (exception != NULL) {
-    return exception;
+  try {
+    cls = findClassAndCache(className);
+    mid = getMethodId(className, CTORNAME, ctorSignature, false);
+  } catch (...) {
+    throw NewObjectException(className);
   }
 
   va_start(args, ctorSignature);
-  obj = env->NewObjectV(cls, mid, args);
+  obj = m_env->NewObjectV(cls, mid, args);
   va_end(args);
 
-  if (obj == NULL) {
-    exception = getAndClearException(env);
-  } else {
-    *objOut = obj;
-    exception = NULL;
-  }
-  return exception;
+  checkExceptionAndClear();
+  return obj;
 }
 
-jthrowable getEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
-                const char * valueName)
+jobject Env::getEnumObject(const char *className, const char * valueName)
 {
-  jthrowable exception;
   jclass cls;
   jfieldID jid;
   jobject obj;
 
-  char clsSignature[MAX_CLS_SIG];
-  int sn;
+  try {
+    cls = findClassAndCache(className);
+    std::string clsSignature = className;
+    clsSignature.insert(0, 1, 'L');
+    clsSignature.push_back(';');
+    jid = m_env->GetStaticFieldID(cls, valueName, clsSignature.c_str());
+    obj = m_env->GetStaticObjectField(cls, jid);
+    checkExceptionAndClear();
+  } catch (...) {
+    throw NewEnumException(className, valueName);
+  }
 
-  exception = getClass(env, &cls, className);
-  if (exception != NULL)
-    return exception;
-  sn = snprintf(clsSignature, MAX_CLS_SIG, "L%s;", className);
-  if (sn >= MAX_CLS_SIG)
-    return newRuntimeException(env, "class name too long");
-
-  jid = env->GetStaticFieldID(cls, valueName, clsSignature);
-  if (jid == 0)
-    return getAndClearException(env);
-
-  obj = env->GetStaticObjectField(cls, jid);
-  exception = getAndClearException(env);
-  
-  if (exception == NULL)
-    *objOut = obj;
-  return exception;
+  return obj;
 }
 
-jthrowable mapEnumObject(JNIEnv *env, jobject *objOut, const char *className, 
-                int ord)
-{
-  return NULL;
-}
-
-jthrowable newRuntimeException(JNIEnv *env, const char *message)
+jthrowable Env::newRuntimeException(const char *message)
 {
   jthrowable exception;
   jstring jmsg;
   jobject rteObj;
 
-  jmsg = env->NewStringUTF(message);
-  if (jmsg == NULL)
-    return getAndClearException(env);
+  jmsg = m_env->NewStringUTF(message);
+  checkExceptionAndAbort();
 
-  exception = newClassObject(env, &rteObj, JRUNTIMEEXCEPT_CLS, 
-                JRUNTIMEEXCEPT_CTOR, jmsg);
-  env->DeleteLocalRef(jmsg);
-  if (exception != NULL)
-    return exception;
+  rteObj = newClassObject(JRUNTIMEEXCEPT_CLS, JRUNTIMEEXCEPT_CTOR, jmsg);
+  m_env->DeleteLocalRef(jmsg);
   // TODO: potential mem leak or stale object reference
   return (jthrowable) rteObj;
 }
 
-bool getMethodRetType(char * rettOut, const char *methodSignature)
+bool Env::getMethodRetType(char * rettOut, const char *methodSignature)
 {
   if (rettOut == NULL)
     return false;
@@ -252,136 +323,157 @@ bool getMethodRetType(char * rettOut, const char *methodSignature)
   return true;
 }
 
-void printException(JNIEnv *env, jthrowable exception)
-{
-  jclass excepcls;
-  jclass basecls;
-  jmethodID mid;
-
-  jstring jClsName;
-  jstring jMsg;
-
-  excepcls = env->GetObjectClass(exception);
-  basecls = env->GetObjectClass(excepcls);
-  mid = env->GetMethodID(basecls, "getName", "()Ljava/lang/String;");
-  jClsName = (jstring) env->CallObjectMethod(excepcls, mid);
-  const char *clsName = NULL, *msg = NULL;
-  if (jClsName != NULL) {
-    clsName = env->GetStringUTFChars(jClsName, 0);
-    mid = env->GetMethodID(excepcls, "getMessage", "()Ljava/lang/String;");
-    jMsg = (jstring) env->CallObjectMethod(exception, mid);
-    if (jMsg != NULL) {
-      msg = env->GetStringUTFChars(jMsg, 0); 
-    } 
-  } 
-  if (clsName != NULL) {
-    if (msg != NULL) {
-      printf("exception in %s: %s\n", clsName, msg);
-      env->ReleaseStringUTFChars(jMsg, msg); 
-    } else {
-      printf("exception in %s: no message\n", clsName);
-    }
-    env->ReleaseStringUTFChars(jClsName, clsName); 
-  } else {
-    if (msg != NULL) {
-      printf("exception in unknown class: %s\n", msg);
-      env->ReleaseStringUTFChars(jMsg, msg); 
-    } else {
-      printf("exception in unknown class: no message\n");
-    }
-  }
-  env->ExceptionClear(); // clear all exceptions that happen in the function
-}
-
-jthrowable callMethod(JNIEnv *env, jvalue *retOut, jobject obj, 
-                const char *className, const char *methodName, 
-                const char * methodSignature, bool isStatic, ...)
+void Env::callMethod(jvalue *retOut, jobject obj, const char *className, 
+      const char *methodName, const char * methodSignature, bool isStatic, ...)
 {
   va_list args;
-  jthrowable exception;
   jclass cls;
   jmethodID mid;
 
-  exception = getClass(env, &cls, className);
-  if (exception != NULL)
-    return exception;
+  cls = findClassAndCache(className);
+  mid = getMethodId(className, methodName, methodSignature, isStatic);
 
-  exception = getMethodId(env, &mid, className, methodName, 
-                          methodSignature, isStatic);
-  if (exception != NULL)
-    return exception;
-
-  va_start(args, isStatic);
-  char retType;
-  getMethodRetType(&retType, methodSignature);
-  switch (retType) {
-    case J_BOOL:
-        if (isStatic)
-          exception = callStaticBooleanMethod(env, retOut, cls, mid, args);
-        else
-          exception = callBooleanMethod(env, retOut, obj, mid, args);
-        break;
-    case J_BYTE:
-        if (isStatic)
-          exception = callStaticByteMethod(env, retOut, cls, mid, args);
-        else
-          exception = callByteMethod(env, retOut, obj, mid, args);
-        break;
-    case J_CHAR:
-        if (isStatic)
-          exception = callStaticCharMethod(env, retOut, cls, mid, args);
-        else
-          exception = callCharMethod(env, retOut, obj, mid, args);
-        break;
-    case J_SHORT:
-        if (isStatic)
-          exception = callStaticShortMethod(env, retOut, cls, mid, args);
-        else
-          exception = callShortMethod(env, retOut, obj, mid, args);
-        break;
-    case J_INT:
-        if (isStatic)
-          exception = callStaticIntMethod(env, retOut, cls, mid, args);
-        else
-          exception = callIntMethod(env, retOut, obj, mid, args);
-        break;
-    case J_LONG:
-        if (isStatic)
-          exception = callStaticLongMethod(env, retOut, cls, mid, args);
-        else
-          exception = callLongMethod(env, retOut, obj, mid, args);
-        break;
-    case J_FLOAT:
-        if (isStatic)
-          exception = callStaticFloatMethod(env, retOut, cls, mid, args);
-        else
-          exception = callFloatMethod(env, retOut, obj, mid, args);
-        break;
-    case J_DOUBLE:
-        if (isStatic)
-          exception = callStaticDoubleMethod(env, retOut, cls, mid, args);
-        else
-          exception = callDoubleMethod(env, retOut, obj, mid, args);
-        break;
-    case J_VOID: 
-        if (isStatic)
-          exception = callStaticVoidMethod(env, cls, mid, args);
-        else
-          exception = callVoidMethod(env, obj, mid, args);
-        break;
-    case J_OBJ: 
-    case J_ARRAY: 
-        if (isStatic)
-          exception = callStaticObjectMethod(env, retOut, cls, mid, args);
-        else
-          exception = callObjectMethod(env, retOut, obj, mid, args);
-        break;
-    default: 
-        // TODO: throw a new exception to handle unrecognized return type
-        break;
+  try {
+    va_start(args, isStatic);
+    char retType;
+    if (!getMethodRetType(&retType, methodSignature)) {
+      std::ostringstream ss;
+      ss << "Could not get method return type for " << 
+                className << ":" << methodName;
+      std::string msg = ss.str();
+      throw NativeException(msg.c_str());
+    }
+    switch (retType) {
+      case J_BOOL:
+          if (isStatic)
+            callStaticBooleanMethod(retOut, cls, mid, args);
+          else
+            callBooleanMethod(retOut, obj, mid, args);
+          break;
+      case J_BYTE:
+          if (isStatic)
+            callStaticByteMethod(retOut, cls, mid, args);
+          else
+            callByteMethod(retOut, obj, mid, args);
+          break;
+      case J_CHAR:
+          if (isStatic)
+            callStaticCharMethod(retOut, cls, mid, args);
+          else
+            callCharMethod(retOut, obj, mid, args);
+          break;
+      case J_SHORT:
+          if (isStatic)
+            callStaticShortMethod(retOut, cls, mid, args);
+          else
+            callShortMethod(retOut, obj, mid, args);
+          break;
+      case J_INT:
+          if (isStatic)
+            callStaticIntMethod(retOut, cls, mid, args);
+          else
+            callIntMethod(retOut, obj, mid, args);
+          break;
+      case J_LONG:
+          if (isStatic)
+            callStaticLongMethod(retOut, cls, mid, args);
+          else
+            callLongMethod(retOut, obj, mid, args);
+          break;
+      case J_FLOAT:
+          if (isStatic)
+            callStaticFloatMethod(retOut, cls, mid, args);
+          else
+            callFloatMethod(retOut, obj, mid, args);
+          break;
+      case J_DOUBLE:
+          if (isStatic)
+            callStaticDoubleMethod(retOut, cls, mid, args);
+          else
+            callDoubleMethod(retOut, obj, mid, args);
+          break;
+      case J_VOID: 
+          if (isStatic)
+            callStaticVoidMethod(cls, mid, args);
+          else
+            callVoidMethod(obj, mid, args);
+          break;
+      case J_OBJ: 
+      case J_ARRAY: 
+          if (isStatic)
+            callStaticObjectMethod(retOut, cls, mid, args);
+          else
+            callObjectMethod(retOut, obj, mid, args);
+          break;
+      default: 
+          {
+            std::ostringstream ss;
+            ss << "Unrecognized method return type for " << className << 
+                      ":" << methodName;
+            std::string msg = ss.str();
+            throw NativeException(msg.c_str());
+          }
+    }
+  } catch(...) {
+    va_end(args);
+    throw;
   }
   va_end(args);
-  return exception;
+}
+
+JNIEnv* JNIHelper::getEnv()
+{
+  JNIEnv* env = NULL;
+  JavaVM* vmBuf[JVM_BUF_LEN];
+  jsize vms;
+
+  m_env_lock.lock(); // ensure thread-safe JNIEnv acquisition
+
+  jint ok = JNI_GetCreatedJavaVMs(vmBuf, JVM_BUF_LEN, &vms);
+  if (ok != JNI_OK) {
+    m_env_lock.unlock();
+    throw std::runtime_error("JNI_GetCreatedJavaVMs call failed");
+  }
+  if (vms == 0) {
+    // no JVM has been created yet, create now
+    JavaVM* jvm;
+    
+    JavaVMOption options[1];
+    char *classpath = getenv("CLASSPATH");
+    if (classpath == NULL) {
+      m_env_lock.unlock();
+      throw std::runtime_error("CLASSPATH env variable is not set");
+    }
+    const char *classpath_opt = "-Djava.class.path=";
+    size_t cp_len = strlen(classpath) + strlen(classpath_opt) + 1;
+    char * classpath_arg = (char *) malloc(sizeof(char) * cp_len);
+    snprintf(classpath_arg, cp_len, "%s%s", classpath_opt, classpath);
+    options[0].optionString = classpath_arg;
+    // TODO: we may want to add other JVM options
+
+    JavaVMInitArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.nOptions = 1;
+    args.options = options;
+    args.ignoreUnrecognized = JNI_TRUE;
+    
+    ok = JNI_CreateJavaVM(&jvm, (void **) &env, &args);
+    if (ok != JNI_OK) {
+      m_env_lock.unlock();
+      throw std::runtime_error("JNI_CreateJavaVM call failed");
+    }
+  } else {
+    // there are JVM created already, re-use
+    JavaVM* jvm = vmBuf[0];
+    ok = jvm->AttachCurrentThread((void **) &env, NULL);
+    if (ok != JNI_OK) {
+      m_env_lock.unlock();
+      throw std::runtime_error("AttachCurrentThread call failed");
+    }
+  }
+
+  m_env_lock.unlock(); // end of critical section
+  return env;
 }
 
 

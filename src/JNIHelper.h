@@ -80,16 +80,16 @@ private:
 /**
  * A wrapper for jthrowable into a C++ exception
  */
-class JavaThrowableException {
+class JavaThrowable {
 
 public:
-  JavaThrowableException(JNIEnv* env, jthrowable except)
+  JavaThrowable(JNIEnv* env, jthrowable except)
   {
     m_env = env;
     m_except = (jthrowable) env->NewGlobalRef(except);
   }
 
-  ~JavaThrowableException()
+  ~JavaThrowable()
   {
     m_env->DeleteGlobalRef(m_except);
   }
@@ -112,56 +112,54 @@ private:
 class NativeException: public std::exception {
 public:
   NativeException() {}
-  NativeException(const char* msg, JavaThrowableException* detail = NULL)
+  NativeException(const char* msg, JavaThrowable* detail = NULL)
                     : m_msg(msg), m_detail(detail) {}
 
   virtual const char* what() throw() { return m_msg.c_str(); }
 
-  ~NativeException() throw() 
-  {
-    if (m_detail != NULL)
-      delete m_detail;
-  }
+  JavaThrowable* detail() const { return m_detail; }
+
+  ~NativeException() throw() {}
 
 protected:
-  JavaThrowableException* m_detail;
+  JavaThrowable* m_detail;
   std::string m_msg;
 };
 
 class ClassNotFoundException: public NativeException {
 public:
   ClassNotFoundException(const char* className, 
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class MethodNotFoundException: public NativeException {
 public:
   MethodNotFoundException(const char* className, const char* methodName,
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class FieldNotFoundException: public NativeException {
 public:
   FieldNotFoundException(const char* className, const char* fieldName,
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class NewGlobalRefException: public NativeException {
 public:
   NewGlobalRefException(const char* refName,
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class NewObjectException: public NativeException {
 public:
   NewObjectException(const char* className,
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class NewEnumException: public NativeException {
 public:
   NewEnumException(const char* className, const char * valueName,
-          JavaThrowableException* detail = NULL); 
+          JavaThrowable* detail = NULL); 
 };
 
 class Env;

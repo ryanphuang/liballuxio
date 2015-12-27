@@ -20,7 +20,7 @@ using namespace Tachyon::JNI;
 std::map<JNIEnv*, ClassCache*> ClassCache::s_caches;
 
 ClassNotFoundException::ClassNotFoundException(const char* className,
-    JavaThrowableException* detail)
+    JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not find class " << className;
@@ -29,7 +29,7 @@ ClassNotFoundException::ClassNotFoundException(const char* className,
 }
 
 MethodNotFoundException::MethodNotFoundException(const char* className, 
-    const char* methodName, JavaThrowableException* detail)
+    const char* methodName, JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not find method " << methodName << " in class " << className; 
@@ -38,7 +38,7 @@ MethodNotFoundException::MethodNotFoundException(const char* className,
 }
 
 NewGlobalRefException::NewGlobalRefException(const char* refName,
-    JavaThrowableException* detail)
+    JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not create global reference for " << refName;
@@ -47,7 +47,7 @@ NewGlobalRefException::NewGlobalRefException(const char* refName,
 }
 
 NewObjectException::NewObjectException(const char* className,
-    JavaThrowableException* detail)
+    JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not create object for class " << className;
@@ -56,7 +56,7 @@ NewObjectException::NewObjectException(const char* className,
 }
 
 NewEnumException::NewEnumException(const char* className, 
-    const char * valueName, JavaThrowableException* detail)
+    const char * valueName, JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not create enum for " << valueName << " of class " << className;
@@ -65,7 +65,7 @@ NewEnumException::NewEnumException(const char* className,
 }
 
 FieldNotFoundException::FieldNotFoundException(const char* className, 
-    const char* fieldName, JavaThrowableException* detail)
+    const char* fieldName, JavaThrowable* detail)
 {
   std::ostringstream ss;
   ss << "Could not find field " << fieldName << " in class " << className;
@@ -140,9 +140,11 @@ Env::Env()
 jclass Env::findClass(const char* className)
 {
   jclass cls = m_env->FindClass(className);
-  if (m_env->ExceptionCheck()) {
+  jthrowable except = m_env->ExceptionOccurred();
+  if (except) {
     m_env->ExceptionClear();
-    throw ClassNotFoundException(className);
+    throw ClassNotFoundException(className, 
+          new JavaThrowable(m_env, except));
   }
   return cls;
 }
@@ -169,9 +171,9 @@ jmethodID Env::getMethodId(const char *className, const char *methodName,
       mid = m_env->GetMethodID(cls, methodName, methodSignature);
     }
     checkExceptionAndClear();
-  } catch (...) {
+  } catch (const NativeException& exce) {
     // re-throw as MethodNotFoundException
-    throw MethodNotFoundException(className, methodName);
+    throw MethodNotFoundException(className, methodName, exce.detail());
   }
   if (mid == 0) {
     // 0 represents invalid method id
@@ -256,7 +258,7 @@ void Env::checkException()
 {
   jthrowable except = m_env->ExceptionOccurred();
   if (except) {
-    throw JavaThrowableException(m_env, except);
+    throw JavaThrowable(m_env, except);
   }
 }
 
@@ -266,7 +268,7 @@ void Env::checkExceptionAndClear()
   if (except) {
     // clear the exception in Java before throwing it into C++
     m_env->ExceptionClear();
-    throw JavaThrowableException(m_env, except);
+    throw NativeException("Native exception", new JavaThrowable(m_env, except));
   }
 }
 
@@ -303,8 +305,8 @@ jobject Env::newClassObject(const char *className, const char *ctorSignature, ..
   try {
     cls = findClassAndCache(className);
     mid = getMethodId(className, CTORNAME, ctorSignature, false);
-  } catch (...) {
-    throw NewObjectException(className);
+  } catch (const NativeException& exce) {
+    throw NewObjectException(className, exce.detail());
   }
 
   va_start(args, ctorSignature);
@@ -329,8 +331,8 @@ jobject Env::getEnumObject(const char *className, const char * valueName)
     jid = m_env->GetStaticFieldID(cls, valueName, clsSignature.c_str());
     obj = m_env->GetStaticObjectField(cls, jid);
     checkExceptionAndClear();
-  } catch (...) {
-    throw NewEnumException(className, valueName);
+  } catch (const NativeException& exce) {
+    throw NewEnumException(className, valueName, exce.detail());
   }
 
   return obj;

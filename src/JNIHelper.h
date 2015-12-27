@@ -99,6 +99,8 @@ public:
     return (jthrowable) m_env->NewLocalRef(m_except);
   }
 
+  void printStackTrace();
+
 private:
   JNIEnv* m_env;
   jthrowable m_except;
@@ -119,6 +121,10 @@ public:
 
   JavaThrowable* detail() const { return m_detail; }
 
+  // We don't free the m_detail in destructor because the exception
+  // might be re-thrown, and we don't want to destroy the detail.
+  // It is up to the final exception handler to free up the exception
+  // detail.
   ~NativeException() throw() {}
 
 protected:
@@ -345,6 +351,7 @@ public:
   ~JNIHelper() {}
 
   JNIEnv* getEnv();
+  void printThrowableStackTrace(JNIEnv* env, jthrowable exce);
 
 private:
   JNIHelper() {}

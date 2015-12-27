@@ -19,6 +19,11 @@ using namespace Tachyon::JNI;
 
 std::map<JNIEnv*, ClassCache*> ClassCache::s_caches;
 
+void JavaThrowable::printStackTrace()
+{
+  JNIHelper::get().printThrowableStackTrace(m_env, m_except);
+}
+
 ClassNotFoundException::ClassNotFoundException(const char* className,
     JavaThrowable* detail)
 {
@@ -519,5 +524,16 @@ JNIEnv* JNIHelper::getEnv()
   return env;
 }
 
+void JNIHelper::printThrowableStackTrace(JNIEnv* env, jthrowable exce)
+{
+  jclass cls = env->FindClass("java/lang/Throwable");
+  if (cls != NULL) {
+    jmethodID mid = env->GetMethodID(cls, "printStackTrace", "()V");
+    if (mid != 0) {
+      env->CallVoidMethod(exce, mid);
+    } 
+  }
+  env->ExceptionClear(); // clear any pending exceptions before return;
+}
 
 /* vim: set ts=4 sw=4 : */

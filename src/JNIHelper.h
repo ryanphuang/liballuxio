@@ -119,7 +119,22 @@ public:
 
   virtual const char* what() throw() { return m_msg.c_str(); }
 
+  /**
+   * Get the original Java exception that was thrown.
+   *
+   * If no such exception was kept, return NULL.
+   */
   JavaThrowable* detail() const { return m_detail; }
+
+  /**
+   * Discard this exception. Mainly clean up the original Java exception.
+   */
+  void discard()
+  { 
+    if (m_detail != NULL) {
+      delete m_detail;
+    }
+  }
 
   void printDetailStackTrace()
   {
@@ -219,6 +234,10 @@ public:
   // get a method's return type based on the signature
   bool getMethodRetType(char * rettOut, const char *methodSignature);
 
+  bool getClassName(jclass cls, jobject instance, std::string& nameStr);
+  bool jstringToString(jstring str, std::string& cStr);
+  bool throwableToString(jthrowable except, std::string& exceptStr);
+
   /** Exception related methods **/
   bool hasException();
   void checkException();
@@ -226,17 +245,21 @@ public:
   void checkExceptionAndAbort();
   void checkExceptionAndPrint();
 
-  bool getClassName(jclass cls, jobject instance, std::string& nameStr);
-  bool jstringToString(jstring str, std::string& cStr);
-  bool throwableToString(jthrowable except, std::string& exceptStr);
-
   #define GET_JNI_X_FIELD(R, T)                                                   \
-  R get##T##Field(jobject obj, jfieldID fid)                                      \
+  R get##T##Field(jobject obj, const char *fieldName,                             \
+                    const char *fieldSignature)                                   \
   {                                                                               \
+    jclass cls = m_env->GetObjectClass(obj);                                      \
+    jfieldID fid = m_env->GetFieldID(cls, fieldName, fieldSignature);             \
     R ret = m_env->Get##T##Field(obj, fid);                                       \
     if (hasException()) {                                                         \
       m_env->ExceptionClear();                                                    \
-      throw FieldNotFoundException("", "");                                       \
+      std::string nameStr;                                                        \
+      if (getClassName(cls, obj, nameStr)) {                                      \
+        throw FieldNotFoundException(nameStr.c_str(), fieldName);                 \
+      } else {                                                                    \
+        throw FieldNotFoundException("unknown class", fieldName);                 \
+      }                                                                           \
     }                                                                             \
     return ret;                                                                   \
   }
@@ -320,6 +343,12 @@ private:
 
   JNIEnv *m_env;
 };
+
+#define ENV_CHECK_CLEAR(expr)      \
+  do {                             \
+      (expr);                      \
+      checkExceptionAndClear();    \
+  } while (0)
 
 /**
  * Cache for holding JNI class resolution results. 

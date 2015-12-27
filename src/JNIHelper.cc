@@ -227,43 +227,71 @@ void Env::deleteGlobalRef(jobject obj)
 
 bool Env::jstringToString(jstring str, std::string& cStr)
 {
-  if (str != NULL) {
-    const char* buf = m_env->GetStringUTFChars(str, NULL);
-    if (buf != NULL) {
-      cStr += buf;
-      m_env->ReleaseStringUTFChars(str, buf); 
-    }
+  if (str == NULL) {
+    return false;
+  }
+  const char* buf;
+  buf = m_env->GetStringUTFChars(str, NULL);
+  if (buf != NULL) {
+    cStr += buf;
+    m_env->ReleaseStringUTFChars(str, buf); 
+  } else {
+    // something wrong happened
+    m_env->ExceptionClear();
+    return false;
   }
   return true;
 }
 
 bool Env::getClassName(jclass cls, jobject instance, std::string& nameStr)
 {
-  jmethodID mid = m_env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
-  jobject clsObj = m_env->CallObjectMethod(instance, mid);
-  // the getName method should be called on the base class instead of the
-  // this object
-  jclass baseCls = m_env->GetObjectClass(clsObj); // find the base class
-  mid = m_env->GetMethodID(baseCls, "getName", "()Ljava/lang/String;");
-  jstring clsName = (jstring) m_env->CallObjectMethod(clsObj, mid);
-  return jstringToString(clsName, nameStr);
+  try {
+    jmethodID mid;
+    jobject clsObj;
+    jclass baseCls;
+    jstring clsName;
+
+    ENV_CHECK_CLEAR(mid = m_env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;"));
+    ENV_CHECK_CLEAR(clsObj = m_env->CallObjectMethod(instance, mid));
+
+    // the getName method should be called on the base class instead of the
+    // this object; so we need to find the base class
+    ENV_CHECK_CLEAR(baseCls = m_env->GetObjectClass(clsObj)); 
+
+    ENV_CHECK_CLEAR(mid = m_env->GetMethodID(baseCls, "getName", "()Ljava/lang/String;"));
+    ENV_CHECK_CLEAR(clsName = (jstring) m_env->CallObjectMethod(clsObj, mid));
+
+    return jstringToString(clsName, nameStr);
+  } catch(NativeException &e) {
+    e.discard();
+    return false;
+  }
 }
 
 bool Env::throwableToString(jthrowable except, std::string& exceptStr)
 {
-  jclass cls = m_env->GetObjectClass(except);
-  std::string nameStr;
-  if (!getClassName(cls, except, nameStr)) {
+  try {
+    jclass cls;
+    jmethodID mid; 
+    jstring jmsg;
+
+    ENV_CHECK_CLEAR(cls = m_env->GetObjectClass(except));
+    std::string nameStr;
+    if (!getClassName(cls, except, nameStr)) {
+      return false;
+    }
+    ENV_CHECK_CLEAR(mid = m_env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;"));
+    ENV_CHECK_CLEAR(jmsg = (jstring) m_env->CallObjectMethod(except, mid));
+    std::string msgStr;
+    if (!jstringToString(jmsg, msgStr)) {
+      return false;
+    }
+    exceptStr = nameStr + ": " + msgStr;
+    return true;
+  } catch(NativeException &e) {
+    e.discard();
     return false;
   }
-  jmethodID mid = m_env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;");
-  jstring jmsg = (jstring) m_env->CallObjectMethod(except, mid);
-  std::string msgStr;
-  if (!jstringToString(jmsg, msgStr)) {
-    return false;
-  }
-  exceptStr = nameStr + ": " + msgStr;
-  return true;
 }
 
 bool Env::hasException() 

@@ -24,8 +24,8 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
 
   jPathStr = env.newStringUTF(masterUri, "masterUri");
   // might throw exception, caller needs to handle it
-  env.callMethod(&ret, NULL, TFS_CLS, TFS_GET_METHD, 
-                "(Ljava/lang/String;)Ltachyon/client/TachyonFS;", true, jPathStr);
+  env.callStaticMethod(&ret, TFS_CLS, TFS_GET_METHD, 
+                "(Ljava/lang/String;)Ltachyon/client/TachyonFS;", jPathStr);
   
   env->DeleteLocalRef(jPathStr); 
   return new TachyonClient(env, ret.l);
@@ -42,8 +42,8 @@ jTachyonFile TachyonClient::getFile(const char * path)
   jstring jPathStr;
   
   jPathStr = m_env.newStringUTF(path, "path");
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
-                "(Ljava/lang/String;)Ltachyon/client/TachyonFile;", false, jPathStr);
+  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+                "(Ljava/lang/String;)Ltachyon/client/TachyonFile;", jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   if (ret.l == NULL)
     return NULL;
@@ -53,8 +53,8 @@ jTachyonFile TachyonClient::getFile(const char * path)
 jTachyonFile TachyonClient::getFile(int fid)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
-                "(I)Ltachyon/client/TachyonFile;", false, (jint) fid);
+  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+                "(I)Ltachyon/client/TachyonFile;", (jint) fid);
   if (ret.l == NULL)
     return NULL;
   return new TachyonFile(m_env, ret.l);
@@ -63,8 +63,8 @@ jTachyonFile TachyonClient::getFile(int fid)
 jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_GET_FILE_METHD, 
-                "(IZ)Ltachyon/client/TachyonFile;", false, 
+  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+                "(IZ)Ltachyon/client/TachyonFile;",
                 (jint) fid, (jboolean) useCachedMetadata);
   if (ret.l == NULL)
     return NULL;
@@ -77,8 +77,8 @@ int TachyonClient::getFileId(const char *path)
   jTachyonURI uri = TachyonURI::newURI(path);
   if (uri == NULL)
     return -1;
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_GET_FILEID_METHD, 
-                    "(Ltachyon/TachyonURI;)I", false, uri->getJObj());
+  m_env.callMethod(&ret, m_obj, TFS_GET_FILEID_METHD, 
+                    "(Ltachyon/TachyonURI;)I", uri->getJObj());
   delete uri;
   return ret.i;
 }
@@ -90,8 +90,8 @@ int TachyonClient::createFile(const char * path)
   
   jPathStr = m_env.newStringUTF(path, "path");
 
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
-                    "(Ljava/lang/String;)I", false, jPathStr);
+  m_env.callMethod(&ret, m_obj, TFS_CREATE_FILE_METHD, 
+                    "(Ljava/lang/String;)I", jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.i;
 }
@@ -103,8 +103,8 @@ bool TachyonClient::mkdir(const char *path)
   if (uri == NULL)
     return false;
   
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_MKDIR_METHD, 
-                "(Ltachyon/TachyonURI;)Z", false, uri->getJObj());
+  m_env.callMethod(&ret, m_obj, TFS_MKDIR_METHD, 
+                "(Ltachyon/TachyonURI;)Z", uri->getJObj());
   delete uri;
   return ret.z;
 }
@@ -116,8 +116,8 @@ bool TachyonClient::mkdirs(const char *path, bool recursive)
   if (uri == NULL)
     return false;
   
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_MKDIRS_METHD, 
-                "(Ltachyon/TachyonURI;Z)Z", false, uri->getJObj(), (jboolean) recursive);
+  m_env.callMethod(&ret, m_obj, TFS_MKDIRS_METHD, 
+                "(Ltachyon/TachyonURI;Z)Z", uri->getJObj(), (jboolean) recursive);
   delete uri;
   return ret.z;
 }
@@ -128,8 +128,8 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
   jstring jPathStr;
   
   jPathStr = m_env.newStringUTF(path, "path");
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
-                    "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
+  m_env.callMethod(&ret, m_obj, TFS_DELETE_FILE_METHD, 
+                    "(Ljava/lang/String;Z)Z", jPathStr, (jboolean) recursive);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.z;
 }
@@ -137,57 +137,57 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
 bool TachyonClient::deletePath(int fid, bool recursive)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
-                    "(IZ)Z", false, (jint) fid, (jboolean) recursive);
+  m_env.callMethod(&ret, m_obj, TFS_DELETE_FILE_METHD, 
+                    "(IZ)Z", (jint) fid, (jboolean) recursive);
   return ret.z;
 }
 
 long TachyonFile::length()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_LENGTH_METHD, "()J", false);
+  m_env.callMethod(&ret, m_obj, TFILE_LENGTH_METHD, "()J");
   return ret.j;
 }
 
 bool TachyonFile::isFile()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISFILE_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_ISFILE_METHD, "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isComplete()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISCOMPLETE_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_ISCOMPLETE_METHD, "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isDirectory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISDIRECTORY_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_ISDIRECTORY_METHD, "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isInMemory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISINMEMORY_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_ISINMEMORY_METHD, "()Z");
   return ret.z;
 }
 
 bool TachyonFile::needPin()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_NEEDPIN_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_NEEDPIN_METHD, "()Z");
   return ret.z;
 }
 
 bool TachyonFile::recache()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_RECACHE_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_RECACHE_METHD, "()Z");
   return ret.z;
 }
 
@@ -198,8 +198,7 @@ char * TachyonFile::getPath()
   const char *path;
   char *retPath;
 
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_PATH_METHD, 
-                    "()Ljava/lang/String;", false);
+  m_env.callMethod(&ret, m_obj, TFILE_PATH_METHD, "()Ljava/lang/String;");
   if (ret.l == NULL)
     return NULL;
   jpath = (jstring) ret.l;
@@ -212,8 +211,8 @@ char * TachyonFile::getPath()
 jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_RBB_METHD, 
-                "(I)Ltachyon/client/TachyonByteBuffer;", false, (jint) blockIndex);
+  m_env.callMethod(&ret, m_obj, TFILE_RBB_METHD, 
+                "(I)Ltachyon/client/TachyonByteBuffer;", (jint) blockIndex);
   if (ret.l == NULL)
     return NULL;
   return new TachyonByteBuffer(m_env, ret.l);
@@ -225,8 +224,8 @@ jInStream TachyonFile::getInStream(ReadType readType)
   jobject eobj;
 
   eobj = enumObjReadType(m_env, readType);
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_GIS_METHD, 
-                "(Ltachyon/client/ReadType;)Ltachyon/client/InStream;", false, eobj);
+  m_env.callMethod(&ret, m_obj, TFILE_GIS_METHD, 
+                "(Ltachyon/client/ReadType;)Ltachyon/client/InStream;", eobj);
   if (ret.l == NULL)
     return NULL;
   return new InStream(m_env, ret.l);
@@ -238,8 +237,8 @@ jOutStream TachyonFile::getOutStream(WriteType writeType)
   jobject eobj;
 
   eobj = enumObjWriteType(m_env, writeType);
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_GOS_METHD, 
-                "(Ltachyon/client/WriteType;)Ltachyon/client/OutStream;", false, eobj);
+  m_env.callMethod(&ret, m_obj, TFILE_GOS_METHD, 
+                "(Ltachyon/client/WriteType;)Ltachyon/client/OutStream;", eobj);
   if (ret.l == NULL)
     return NULL;
   return new OutStream(m_env, ret.l);
@@ -254,15 +253,15 @@ jByteBuffer TachyonByteBuffer::getData()
 
 void TachyonByteBuffer::close()
 {
-  m_env.callMethod(NULL, m_obj, TBBUF_CLS, TBBUF_CLOSE_METHD, "()V", false);
+  m_env.callMethod(NULL, m_obj, TBBUF_CLOSE_METHD, "()V");
 }
 
 jByteBuffer ByteBuffer::allocate(int capacity)
 {
   Env env;
   jvalue ret;
-  env.callMethod(&ret, NULL, BBUF_CLS, BBUF_ALLOC_METHD, 
-                "(I)Ljava/nio/ByteBuffer;", true, (jint) capacity);
+  env.callStaticMethod(&ret, BBUF_CLS, BBUF_ALLOC_METHD, 
+                "(I)Ljava/nio/ByteBuffer;", (jint) capacity);
   if (ret.l == NULL)
     return NULL;
   return new ByteBuffer(env, ret.l);
@@ -272,14 +271,14 @@ jByteBuffer ByteBuffer::allocate(int capacity)
 //InStream
 //////////////////////////////////////////
 
-int InStream::readImpl(const char* clsname) 
+int InStream::readImpl() 
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD, "()I", false);
+  m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "()I");
   return ret.i;
 }
 
-int InStream::readImpl(const char* clsname, void *buff, int length, int off, int maxLen)
+int InStream::readImpl(void *buff, int length, int off, int maxLen)
 {
   jbyteArray jBuf;
   jvalue ret;
@@ -288,11 +287,9 @@ int InStream::readImpl(const char* clsname, void *buff, int length, int off, int
   try {
     jBuf = m_env.newByteArray(length);
     if (off < 0 || maxLen <= 0 || length == maxLen)
-      m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD,
-                        "([B)I", false, jBuf);
+      m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "([B)I", jBuf);
     else
-      m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD,
-                        "([BII)I", false, jBuf, off, maxLen);
+      m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "([BII)I", jBuf, off, maxLen);
   } catch (NativeException) {
     if (jBuf != NULL) {
       m_env->DeleteLocalRef(jBuf);
@@ -307,20 +304,20 @@ int InStream::readImpl(const char* clsname, void *buff, int length, int off, int
   return rdSz;
 }
 
-void InStream::closeImpl(const char* clsname)
+void InStream::closeImpl()
 {
-  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_CLOSE_METHD, "()V", false);
+  m_env.callMethod(NULL, m_obj, TISTREAM_CLOSE_METHD, "()V");
 }
 
-void InStream::seekImpl(const char* clsname, long pos)
+void InStream::seekImpl(long pos)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_SEEK_METHD, "(J)V", false, (jlong) pos);
+  m_env.callMethod(NULL, m_obj, TISTREAM_SEEK_METHD, "(J)V", (jlong) pos);
 }
 
-long InStream::skipImpl(const char* clsname, long n)
+long InStream::skipImpl(long n)
 {
   jvalue ret;
-  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
+  m_env.callMethod(NULL, m_obj, TISTREAM_SKIP_METHD, "(J)J", (jlong) n);
   return ret.j;
 }
 
@@ -329,12 +326,12 @@ long InStream::skipImpl(const char* clsname, long n)
 
 int InStream::read()
 {
-  return readImpl(TISTREAM_CLS);
+  return readImpl();
 }
 
 int InStream::read(void *buff, int length, int off, int maxLen) 
 {
-  return readImpl(TISTREAM_CLS, buff, length, off, maxLen);
+  return readImpl(buff, length, off, maxLen);
 }
 
 int InStream::read(void *buff, int length)
@@ -344,17 +341,17 @@ int InStream::read(void *buff, int length)
 
 void InStream::close()
 {
-  closeImpl(TISTREAM_CLS);
+  closeImpl();
 }
 
 void InStream::seek(long pos)
 {
-  seekImpl(TISTREAM_CLS, pos);
+  seekImpl(pos);
 }
 
 long InStream::skip(long n)
 {
-  return skipImpl(TISTREAM_CLS, n);
+  return skipImpl(n);
 }
 
 //////////////////////////////////////////
@@ -363,27 +360,27 @@ long InStream::skip(long n)
 
 int FileInStream::read()
 {
-  return readImpl(TFILE_ISTREAM_CLS);
+  return readImpl();
 }
 
 int FileInStream::read(void *buff, int length, int off, int maxLen) 
 {
-  return readImpl(TFILE_ISTREAM_CLS, buff, length, off, maxLen);
+  return readImpl(buff, length, off, maxLen);
 }
 
 void FileInStream::close()
 {
-  closeImpl(TFILE_ISTREAM_CLS);
+  closeImpl();
 }
 
 long FileInStream::skip(long n)
 {
-  return skipImpl(TFILE_ISTREAM_CLS, n);
+  return skipImpl(n);
 }
 
 void FileInStream::seek(long pos)
 {
-  seekImpl(TFILE_ISTREAM_CLS, pos);
+  seekImpl(pos);
 }
 
 //////////////////////////////////////////
@@ -392,27 +389,27 @@ void FileInStream::seek(long pos)
 
 int EmptyBlockInStream::read()
 {
-  return readImpl(TEMPTY_BLOCK_ISTREAM_CLS);
+  return readImpl();
 }
 
 int EmptyBlockInStream::read(void *buff, int length, int off, int maxLen) 
 {
-  return readImpl(TEMPTY_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+  return readImpl(buff, length, off, maxLen);
 }
 
 void EmptyBlockInStream::close()
 {
-  closeImpl(TEMPTY_BLOCK_ISTREAM_CLS);
+  closeImpl();
 }
 
 long EmptyBlockInStream::skip(long n)
 {
-  return skipImpl(TEMPTY_BLOCK_ISTREAM_CLS, n);
+  return skipImpl(n);
 }
 
 void EmptyBlockInStream::seek(long pos)
 {
-  seekImpl(TEMPTY_BLOCK_ISTREAM_CLS, pos);
+  seekImpl(pos);
 }
 
 //////////////////////////////////////////
@@ -421,27 +418,27 @@ void EmptyBlockInStream::seek(long pos)
 
 int LocalBlockInStream::read()
 {
-  return readImpl(TLOCAL_BLOCK_ISTREAM_CLS);
+  return readImpl();
 }
 
 int LocalBlockInStream::read(void *buff, int length, int off, int maxLen) 
 {
-  return readImpl(TLOCAL_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+  return readImpl(buff, length, off, maxLen);
 }
 
 void LocalBlockInStream::close()
 {
-  closeImpl(TLOCAL_BLOCK_ISTREAM_CLS);
+  closeImpl();
 }
 
 long LocalBlockInStream::skip(long n)
 {
-  return skipImpl(TLOCAL_BLOCK_ISTREAM_CLS, n);
+  return skipImpl(n);
 }
 
 void LocalBlockInStream::seek(long pos)
 {
-  seekImpl(TLOCAL_BLOCK_ISTREAM_CLS, pos);
+  seekImpl(pos);
 }
 
 //////////////////////////////////////////
@@ -450,55 +447,54 @@ void LocalBlockInStream::seek(long pos)
 
 int RemoteBlockInStream::read()
 {
-  return readImpl(TREMOTE_BLOCK_ISTREAM_CLS);
+  return readImpl();
 }
 
 int RemoteBlockInStream::read(void *buff, int length, int off, int maxLen) 
 {
-  return readImpl(TREMOTE_BLOCK_ISTREAM_CLS, buff, length, off, maxLen);
+  return readImpl(buff, length, off, maxLen);
 }
 
 void RemoteBlockInStream::close()
 {
-  closeImpl(TREMOTE_BLOCK_ISTREAM_CLS);
+  closeImpl();
 }
 
 long RemoteBlockInStream::skip(long n)
 {
-  return skipImpl(TREMOTE_BLOCK_ISTREAM_CLS, n);
+  return skipImpl(n);
 }
 
 void RemoteBlockInStream::seek(long pos)
 {
-  seekImpl(TREMOTE_BLOCK_ISTREAM_CLS, pos);
+  seekImpl(pos);
 }
 
 //////////////////////////////////////////
 // OutStream
 //////////////////////////////////////////
 
-void OutStream::cancelImpl(const char* clsname)
+void OutStream::cancelImpl()
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CANCEL_METHD, "()V", false);
+  m_env.callMethod(NULL, m_obj, TOSTREAM_CANCEL_METHD, "()V");
 }
 
-void OutStream::closeImpl(const char* clsname)
+void OutStream::closeImpl()
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CLOSE_METHD, "()V", false);
+  m_env.callMethod(NULL, m_obj, TOSTREAM_CLOSE_METHD, "()V");
 }
 
-void OutStream::flushImpl(const char* clsname)
+void OutStream::flushImpl()
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_FLUSH_METHD, "()V", false);
+  m_env.callMethod(NULL, m_obj, TOSTREAM_FLUSH_METHD, "()V");
 }
 
-
-void OutStream::writeImpl(const char* clsname, int byte) 
+void OutStream::writeImpl(int byte) 
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_WRITE_METHD, "(I)V", false, (jint) byte);
+  m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD, "(I)V", (jint) byte);
 }
 
-void OutStream::writeImpl(const char* clsname, const void *buff, int length, 
+void OutStream::writeImpl(const void *buff, int length, 
                           int off, int maxLen)
 {
   jthrowable exception;
@@ -512,11 +508,11 @@ void OutStream::writeImpl(const char* clsname, const void *buff, int length,
   // printf("byte array in write: %s\n", jbuff);
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
-                  "([B)V", false, jBuf);
+    m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD,
+                  "([B)V", jBuf);
   else
-    m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
-                  "([BII)V", false, jBuf, (jint) off, (jint) maxLen);
+    m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD,
+                  "([BII)V", jBuf, (jint) off, (jint) maxLen);
   m_env->DeleteLocalRef(jBuf);
 }
 
@@ -524,22 +520,22 @@ void OutStream::writeImpl(const char* clsname, const void *buff, int length,
 
 void OutStream::cancel() 
 {
-  cancelImpl(TOSTREAM_CLS);
+  cancelImpl();
 }
 
 void OutStream::close()
 {
-  closeImpl(TOSTREAM_CLS);
+  closeImpl();
 }
 
 void OutStream::flush()
 {
-  flushImpl(TOSTREAM_CLS);
+  flushImpl();
 }
 
 void OutStream::write(const void *buff, int length, int off, int maxLen)
 {
-  writeImpl(TOSTREAM_CLS, buff, length, off, maxLen);
+  writeImpl(buff, length, off, maxLen);
 }
 
 void OutStream::write(const void *buff, int length)
@@ -553,22 +549,22 @@ void OutStream::write(const void *buff, int length)
 
 void FileOutStream::cancel() 
 {
-  cancelImpl(TFILE_OSTREAM_CLS);
+  cancelImpl();
 }
 
 void FileOutStream::close()
 {
-  closeImpl(TFILE_OSTREAM_CLS);
+  closeImpl();
 }
 
 void FileOutStream::flush()
 {
-  flushImpl(TFILE_OSTREAM_CLS);
+  flushImpl();
 }
 
 void FileOutStream::write(const void *buff, int length, int off, int maxLen)
 {
-  writeImpl(TFILE_OSTREAM_CLS, buff, length, off, maxLen);
+  writeImpl(buff, length, off, maxLen);
 }
 
 //////////////////////////////////////////
@@ -577,22 +573,22 @@ void FileOutStream::write(const void *buff, int length, int off, int maxLen)
 
 void BlockOutStream::cancel() 
 {
-  cancelImpl(TBLOCK_OSTREAM_CLS);
+  cancelImpl();
 }
 
 void BlockOutStream::close()
 {
-  closeImpl(TBLOCK_OSTREAM_CLS);
+  closeImpl();
 }
 
 void BlockOutStream::flush()
 {
-  flushImpl(TBLOCK_OSTREAM_CLS);
+  flushImpl();
 }
 
 void BlockOutStream::write(const void *buff, int length, int off, int maxLen)
 {
-  writeImpl(TBLOCK_OSTREAM_CLS, buff, length, off, maxLen);
+  writeImpl(buff, length, off, maxLen);
 }
 
 //////////////////////////////////////////
@@ -606,7 +602,7 @@ jTachyonURI TachyonURI::newURI(const char *pathStr)
   jstring jPathStr;
   
   jPathStr = env.newStringUTF(pathStr, "path");
-  retObj = env.newClassObject(TURI_CLS, "(Ljava/lang/String;)V", jPathStr);
+  retObj = env.newObject(TURI_CLS, "(Ljava/lang/String;)V", jPathStr);
   env->DeleteLocalRef(jPathStr);
   return new TachyonURI(env, retObj);
 }
@@ -620,7 +616,7 @@ jTachyonURI TachyonURI::newURI(const char *scheme, const char *authority, const 
   jscheme = env.newStringUTF(scheme, "scheme");
   jauthority = env.newStringUTF(authority, "authority");
   jpath = env.newStringUTF(path, "path");
-  retObj = env.newClassObject(TURI_CLS,
+  retObj = env.newObject(TURI_CLS,
                   "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", 
                   jscheme, jauthority, jpath);
   env->DeleteLocalRef(jscheme);
@@ -639,12 +635,12 @@ jTachyonKV TachyonKV::createKV(jTachyonClient client, ReadType readType,
   ewritetObj = enumObjWriteType(env, writeType);
 
   if (kvStore == NULL || strlen(kvStore) == 0) {
-    retObj = env.newClassObject(TKV_CLS,
+    retObj = env.newObject(TKV_CLS,
                   "(Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;J)V", 
                   client->getJObj(), ereadtObj, ewritetObj, (jlong) blockSizeByte);
   } else {
     jstring jKVStr = env.newStringUTF(kvStore, "kvstore");
-    retObj = env.newClassObject(TKV_CLS,
+    retObj = env.newObject(TKV_CLS,
                   "(Ltachyon/client/TachyonFS;Ltachyon/client/ReadType;Ltachyon/client/WriteType;JLjava/lang/String;)V", 
                   client->getJObj(), ereadtObj, ewritetObj, (jlong) blockSizeByte, jKVStr);
     env->DeleteLocalRef(jKVStr);
@@ -658,7 +654,7 @@ bool TachyonKV::init()
 {
   jthrowable exception;
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TKV_CLS, TKV_INIT_METHD, "()Z", false);
+  m_env.callMethod(&ret, m_obj, TKV_INIT_METHD, "()Z");
   return ret.i;
 }
 
@@ -668,14 +664,14 @@ int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuel
   jobject jDbuff;
   jvalue ret;
 
-  m_env.callMethod(&ret, m_obj, TKV_CLS, TKV_GRBUFF_METHD,
-          "()Ljava/nio/ByteBuffer;", false);
+  m_env.callMethod(&ret, m_obj, TKV_GRBUFF_METHD,
+          "()Ljava/nio/ByteBuffer;");
   jDbuff = ret.l;
 
   std::string skey(key, keylen);
   jstring jKeyStr = m_env.newStringUTF(skey.c_str(), "key");
-  m_env.callMethod(&ret, m_obj, TKV_CLS, TKV_RBUFF_METHD,
-          "(Ljava/lang/String;Ljava/nio/ByteBuffer;)I", false, jKeyStr, jDbuff);
+  m_env.callMethod(&ret, m_obj, TKV_RBUFF_METHD,
+          "(Ljava/lang/String;Ljava/nio/ByteBuffer;)I", jKeyStr, jDbuff);
   m_env->DeleteLocalRef(jKeyStr);
   char *cDbuff = (char *) m_env->GetDirectBufferAddress(jDbuff);
   if (cDbuff == NULL) {
@@ -732,8 +728,8 @@ void TachyonKV::set(const char *key, uint32_t keylen, const char *buff, uint32_t
 
   std::string skey(key, keylen);
   jstring jKeyStr = m_env.newStringUTF(skey.c_str(), "key");
-  m_env.callMethod(NULL, m_obj, TKV_CLS, TKV_WBUFF_METHD,
-          "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V", false, jKeyStr, jDbuff);
+  m_env.callMethod(NULL, m_obj, TKV_WBUFF_METHD,
+          "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V", jKeyStr, jDbuff);
   m_env->DeleteLocalRef(jKeyStr);
 
   /*

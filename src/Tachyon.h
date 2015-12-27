@@ -217,11 +217,11 @@ class InStream : public JNIObjBase {
     long skip(long n);
   
   protected:
-    void closeImpl(const char* clsname);
-    int readImpl(const char* clsname);
-    int readImpl(const char* clsname, void *buff, int length, int off, int maxLen);
-    void seekImpl(const char* clsname, long pos);
-    long skipImpl(const char* clsname, long n); 
+    void closeImpl();
+    int readImpl();
+    int readImpl(void *buff, int length, int off, int maxLen);
+    void seekImpl(long pos);
+    long skipImpl(long n); 
 };
 
 class FileInStream : public InStream {
@@ -271,11 +271,11 @@ class OutStream : public JNIObjBase {
     void write(const void *buff, int length, int off, int maxLen);
 
   protected:
-    void cancelImpl(const char* clsname);
-    void closeImpl(const char* clsname);
-    void flushImpl(const char* clsname);
-    void writeImpl(const char* clsname, int byte);
-    void writeImpl(const char* clsname, const void *buff, int length, int off, int maxLen);
+    void cancelImpl();
+    void closeImpl();
+    void flushImpl();
+    void writeImpl(int byte);
+    void writeImpl(const void *buff, int length, int off, int maxLen);
 };
 
 class FileOutStream : public OutStream {

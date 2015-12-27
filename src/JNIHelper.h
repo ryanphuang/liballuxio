@@ -252,13 +252,16 @@ public:
     jclass cls = m_env->GetObjectClass(obj);                                      \
     jfieldID fid = m_env->GetFieldID(cls, fieldName, fieldSignature);             \
     R ret = m_env->Get##T##Field(obj, fid);                                       \
-    if (hasException()) {                                                         \
+    jthrowable except = m_env->ExceptionOccurred();                               \
+    if (except) {                                                                 \
       m_env->ExceptionClear();                                                    \
       std::string nameStr;                                                        \
       if (getClassName(cls, obj, nameStr)) {                                      \
-        throw FieldNotFoundException(nameStr.c_str(), fieldName);                 \
+        throw FieldNotFoundException(nameStr.c_str(), fieldName,                  \
+                  new JavaThrowable(m_env, except));                              \
       } else {                                                                    \
-        throw FieldNotFoundException("unknown class", fieldName);                 \
+        throw FieldNotFoundException("unknown class", fieldName,                  \
+                  new JavaThrowable(m_env, except));                              \
       }                                                                           \
     }                                                                             \
     return ret;                                                                   \

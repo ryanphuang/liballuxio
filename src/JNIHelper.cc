@@ -160,29 +160,61 @@ jclass Env::findClassAndCache(const char *className)
 }
 
 jmethodID Env::getMethodId(const char *className, const char *methodName, 
-                          const char *methodSignature, bool isStatic)
+      const char *methodSignature)
 {
-  jclass cls;
-  jthrowable exception;
-  jmethodID mid;
-
   try {
-    cls = findClassAndCache(className);
-    if (isStatic) {
-      // find the static method
-      mid = m_env->GetStaticMethodID(cls, methodName, methodSignature);
-    } else {
-      // find the instance method
-      mid = m_env->GetMethodID(cls, methodName, methodSignature);
-    }
-    checkExceptionAndClear();
+    jclass cls = findClassAndCache(className);
+    return getMethodId(cls, className, methodName, methodSignature, false);
   } catch (const NativeException& exce) {
     // re-throw as MethodNotFoundException
     throw MethodNotFoundException(className, methodName, exce.detail());
   }
-  if (mid == 0) {
-    // 0 represents invalid method id
-    throw MethodNotFoundException(className, methodName);
+}
+
+jmethodID Env::getStaticMethodId(const char *className, const char *methodName, 
+      const char *methodSignature)
+{
+  try {
+    jclass cls = findClassAndCache(className);
+    return getMethodId(cls, className, methodName, methodSignature, true);
+  } catch (const NativeException& exce) {
+    // re-throw as MethodNotFoundException
+    throw MethodNotFoundException(className, methodName, exce.detail());
+  }
+}
+
+jmethodID Env::getMethodId(jclass cls, const char *methodName, 
+      const char *methodSignature)
+{
+  try {
+    return getMethodId(cls, "", methodName, methodSignature, false);
+  } catch (const NativeException& exce) {
+    // re-throw as MethodNotFoundException
+    throw MethodNotFoundException("", methodName, exce.detail());
+  }
+}
+
+jmethodID Env::getStaticMethodId(jclass cls, const char *methodName, 
+      const char *methodSignature)
+{
+  try {
+    return getMethodId(cls, "", methodName, methodSignature, true);
+  } catch (const NativeException& exce) {
+    // re-throw as MethodNotFoundException
+    throw MethodNotFoundException("", methodName, exce.detail());
+  }
+}
+
+jmethodID Env::getMethodId(jclass cls, const char *className, const char *methodName, 
+      const char *methodSignature, bool isStatic)
+{
+  jmethodID mid;
+  if (isStatic) {
+    // find the static method
+    mid = m_env->GetStaticMethodID(cls, methodName, methodSignature);
+  } else {
+    // find the instance method
+    mid = m_env->GetMethodID(cls, methodName, methodSignature);
   }
   return mid;
 }
@@ -206,11 +238,8 @@ jobject Env::newGlobalRef(jobject obj)
     m_env->ExceptionClear();
     jclass cls = m_env->GetObjectClass(obj);
     std::string nameStr;
-    if (getClassName(cls, obj, nameStr)) {
-      throw NewGlobalRefException(nameStr.c_str());
-    } else {
-      throw NewGlobalRefException("unknown class");
-    }
+    getClassName(cls, obj, nameStr);
+    throw NewGlobalRefException(nameStr.c_str());
   }
   return ret;
 }
@@ -275,6 +304,7 @@ bool Env::getClassName(jclass cls, jobject instance, std::string& nameStr)
     return jstringToString(clsName, nameStr);
   } catch(NativeException &e) {
     e.discard();
+    nameStr = "<unknown class>";
     return false;
   }
 }
@@ -288,9 +318,7 @@ bool Env::throwableToString(jthrowable except, std::string& exceptStr)
 
     ENV_CHECK_CLEAR(cls = m_env->GetObjectClass(except));
     std::string nameStr;
-    if (!getClassName(cls, except, nameStr)) {
-      return false;
-    }
+    getClassName(cls, except, nameStr);
     ENV_CHECK_CLEAR(mid = m_env->GetMethodID(cls, "getMessage", "()Ljava/lang/String;"));
     ENV_CHECK_CLEAR(jmsg = (jstring) m_env->CallObjectMethod(except, mid));
     std::string msgStr;
@@ -351,26 +379,55 @@ void Env::checkExceptionAndPrint()
   }
 }
 
-jobject Env::newClassObject(const char *className, const char *ctorSignature, ...)
+jobject Env::newObject(const char *className, const char *ctorSignature, ...)
 {
   va_list args;
   jclass cls; // need class for new object
+  jobject obj;
+
+  cls = findClassAndCache(className);
+  
+  try {
+    va_start(args, ctorSignature);
+    obj = newObjectV(cls, className, ctorSignature, args);
+    va_end(args);
+  } catch(NativeException) {
+    va_end(args);
+    throw;
+  }
+  return obj;
+}
+
+jobject Env::newObject(jclass cls, const char *className, const char *ctorSignature, ...)
+{
+  va_list args;
+  jobject obj;
+
+  try {
+    va_start(args, ctorSignature);
+    obj = newObjectV(cls, className, ctorSignature, args);
+    va_end(args);
+  } catch(NativeException) {
+    va_end(args);
+    throw;
+  }
+  return obj;
+}
+
+jobject Env::newObjectV(jclass cls, const char *className, const char *ctorSignature, 
+                        va_list args)
+{
   jmethodID mid;
   jobject obj;
 
   try {
-    cls = findClassAndCache(className);
-    mid = getMethodId(className, CTORNAME, ctorSignature, false);
+    mid = getMethodId(cls, className, CTORNAME, ctorSignature, false);
+    obj = m_env->NewObjectV(cls, mid, args);
+    checkExceptionAndClear();
+    return obj;
   } catch (const NativeException& exce) {
     throw NewObjectException(className, exce.detail());
   }
-
-  va_start(args, ctorSignature);
-  obj = m_env->NewObjectV(cls, mid, args);
-  va_end(args);
-
-  checkExceptionAndClear();
-  return obj;
 }
 
 jobject Env::getEnumObject(const char *className, const char *valueName)
@@ -403,7 +460,7 @@ jthrowable Env::newRuntimeException(const char *message)
   jmsg = m_env->NewStringUTF(message);
   checkExceptionAndAbort();
 
-  rteObj = newClassObject(JRUNTIMEEXCEPT_CLS, JRUNTIMEEXCEPT_CTOR, jmsg);
+  rteObj = newObject(JRUNTIMEEXCEPT_CLS, JRUNTIMEEXCEPT_CTOR, jmsg);
   m_env->DeleteLocalRef(jmsg);
   // TODO: potential mem leak or stale object reference
   return (jthrowable) rteObj;
@@ -422,102 +479,107 @@ bool Env::getMethodRetType(char *rettOut, const char *methodSignature)
   return true;
 }
 
-void Env::callMethod(jvalue *retOut, jobject obj, const char *className, 
-      const char *methodName, const char *methodSignature, bool isStatic, ...)
+void Env::callMethod(jvalue *retOut, jobject obj, const char *methodName, 
+                      const char *methodSignature, ...)
 {
+
   va_list args;
-  jclass cls;
-  jmethodID mid;
-
-  cls = findClassAndCache(className);
-  mid = getMethodId(className, methodName, methodSignature, isStatic);
-
   try {
-    va_start(args, isStatic);
-    char retType;
-    if (!getMethodRetType(&retType, methodSignature)) {
-      std::ostringstream ss;
-      ss << "Could not get method return type for " << 
-                className << ":" << methodName;
-      std::string msg = ss.str();
-      throw NativeException(msg.c_str());
-    }
-    switch (retType) {
-      case J_BOOL:
-          if (isStatic)
-            callStaticBooleanMethod(retOut, cls, mid, args);
-          else
-            callBooleanMethod(retOut, obj, mid, args);
-          break;
-      case J_BYTE:
-          if (isStatic)
-            callStaticByteMethod(retOut, cls, mid, args);
-          else
-            callByteMethod(retOut, obj, mid, args);
-          break;
-      case J_CHAR:
-          if (isStatic)
-            callStaticCharMethod(retOut, cls, mid, args);
-          else
-            callCharMethod(retOut, obj, mid, args);
-          break;
-      case J_SHORT:
-          if (isStatic)
-            callStaticShortMethod(retOut, cls, mid, args);
-          else
-            callShortMethod(retOut, obj, mid, args);
-          break;
-      case J_INT:
-          if (isStatic)
-            callStaticIntMethod(retOut, cls, mid, args);
-          else
-            callIntMethod(retOut, obj, mid, args);
-          break;
-      case J_LONG:
-          if (isStatic)
-            callStaticLongMethod(retOut, cls, mid, args);
-          else
-            callLongMethod(retOut, obj, mid, args);
-          break;
-      case J_FLOAT:
-          if (isStatic)
-            callStaticFloatMethod(retOut, cls, mid, args);
-          else
-            callFloatMethod(retOut, obj, mid, args);
-          break;
-      case J_DOUBLE:
-          if (isStatic)
-            callStaticDoubleMethod(retOut, cls, mid, args);
-          else
-            callDoubleMethod(retOut, obj, mid, args);
-          break;
-      case J_VOID: 
-          if (isStatic)
-            callStaticVoidMethod(cls, mid, args);
-          else
-            callVoidMethod(obj, mid, args);
-          break;
-      case J_OBJ: 
-      case J_ARRAY: 
-          if (isStatic)
-            callStaticObjectMethod(retOut, cls, mid, args);
-          else
-            callObjectMethod(retOut, obj, mid, args);
-          break;
-      default: 
-          {
-            std::ostringstream ss;
-            ss << "Unrecognized method return type for " << className << 
-                      ":" << methodName;
-            std::string msg = ss.str();
-            throw NativeException(msg.c_str());
-          }
-    }
-  } catch(...) {
+    va_start(args, methodSignature);
+    callMethodV(retOut, obj, methodName, methodSignature, false, args);
+    va_end(args);
+  } catch(NativeException) {
     va_end(args);
     throw;
   }
-  va_end(args);
+}
+
+void Env::callMethodV(jvalue *retOut, jobject obj, const char *methodName, 
+                      const char *methodSignature, bool isStatic, va_list args) 
+{
+  jclass cls;
+  jmethodID mid;
+  char retType;
+
+  cls = m_env->GetObjectClass(obj);
+  mid = getMethodId(cls, "", methodName, methodSignature, isStatic);
+  if (!getMethodRetType(&retType, methodSignature)) {
+    std::ostringstream ss;
+    ss << "Could not get return type for method " <<  methodName;
+    std::string msg = ss.str();
+    throw NativeException(msg.c_str());
+  }
+
+  switch (retType) {
+    case J_BOOL:
+        if (isStatic)
+          callStaticBooleanMethod(retOut, cls, mid, args);
+        else
+          callBooleanMethod(retOut, obj, mid, args);
+        break;
+    case J_BYTE:
+        if (isStatic)
+          callStaticByteMethod(retOut, cls, mid, args);
+        else
+          callByteMethod(retOut, obj, mid, args);
+        break;
+    case J_CHAR:
+        if (isStatic)
+          callStaticCharMethod(retOut, cls, mid, args);
+        else
+          callCharMethod(retOut, obj, mid, args);
+        break;
+    case J_SHORT:
+        if (isStatic)
+          callStaticShortMethod(retOut, cls, mid, args);
+        else
+          callShortMethod(retOut, obj, mid, args);
+        break;
+    case J_INT:
+        if (isStatic)
+          callStaticIntMethod(retOut, cls, mid, args);
+        else
+          callIntMethod(retOut, obj, mid, args);
+        break;
+    case J_LONG:
+        if (isStatic)
+          callStaticLongMethod(retOut, cls, mid, args);
+        else
+          callLongMethod(retOut, obj, mid, args);
+        break;
+    case J_FLOAT:
+        if (isStatic)
+          callStaticFloatMethod(retOut, cls, mid, args);
+        else
+          callFloatMethod(retOut, obj, mid, args);
+        break;
+    case J_DOUBLE:
+        if (isStatic)
+          callStaticDoubleMethod(retOut, cls, mid, args);
+        else
+          callDoubleMethod(retOut, obj, mid, args);
+        break;
+    case J_VOID: 
+        if (isStatic)
+          callStaticVoidMethod(cls, mid, args);
+        else
+          callVoidMethod(obj, mid, args);
+        break;
+    case J_OBJ: 
+    case J_ARRAY: 
+        if (isStatic)
+          callStaticObjectMethod(retOut, cls, mid, args);
+        else
+          callObjectMethod(retOut, obj, mid, args);
+        break;
+    default: 
+        {
+          std::ostringstream ss;
+          ss << "Unrecognized return type for method " << methodName;
+          std::string msg = ss.str();
+          throw NativeException(msg.c_str());
+        }
+  }
 }
 
 JNIEnv* JNIHelper::getEnv()
@@ -585,6 +647,38 @@ void JNIHelper::printThrowableStackTrace(JNIEnv *env, jthrowable exce)
     } 
   }
   env->ExceptionClear(); // clear any pending exceptions before return;
+}
+
+bool JNIHelper::getThrowableStackTrace(JNIEnv *env, jthrowable exce, std::string &out)
+{
+  // The original Java code to get stack trace as a string is as follows:
+  // 
+  //     final StringWriter sw = new StringWriter();
+  //     final PrintWriter pw = new PrintWriter(sw, true);
+  //     throwable.printStackTrace(pw);
+  //     return sw.getBuffer().toString();
+  //
+
+  Env _env(env);
+  try {
+    jobject sWriter = _env.newObject("java/io/StringWriter", "()V");
+    jobject pWriter = _env.newObject("java/io/PrintWriter", "(Ljava/io/Writer;Z)V",
+                                      sWriter, (jboolean) true);
+    _env.callMethod(NULL, exce, "java/lang/Throwable", "printStackTrace",
+                    "(Ljava/io/PrintWriter;)V", pWriter);
+    jvalue ret;
+    _env.callMethod(&ret, sWriter, "toString", "()Ljava/lang/String;");
+    if (ret.l != NULL) {
+      jstring strace = (jstring) (ret.l);
+      _env.jstringToString(strace, out);
+      return true;
+    } else {
+      return false;
+    }
+  } catch (NativeException& e) {
+    e.discard();
+    return false;
+  }
 }
 
 /* vim: set ts=4 sw=4 : */

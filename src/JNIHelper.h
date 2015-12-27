@@ -222,10 +222,18 @@ public:
 
   // get method id in a java class
   jmethodID getMethodId(const char *className, const char *methodName, 
-                        const char *methodSignature, bool isStatic);
+                        const char *methodSignature);
+  jmethodID getStaticMethodId(const char *className, const char *methodName, 
+                        const char *methodSignature);
+
+  jmethodID getMethodId(jclass cls, const char *methodName, 
+                        const char *methodSignature);
+  jmethodID getStaticMethodId(jclass cls, const char *methodName, 
+                        const char *methodSignature);
 
   // create a new object for a class
-  jobject newClassObject(const char *className, const char *ctorSignature, ...);
+  jobject newObject(const char *className, const char *ctorSignature, ...);
+  jobject newObject(jclass cls, const char *className, const char *ctorSignature, ...);
 
   // get the jobject for a enum value
   jobject getEnumObject(const char *className, const char * valueName);
@@ -281,8 +289,12 @@ public:
   #undef GET_JNI_X_FIELD
 
   // invoke a method of a java class
-  void callMethod(jvalue *retOut, jobject obj, const char *className, 
-                const char *methodName, const char * methodSignature, bool isStatic, ...);
+  void callMethod(jvalue *retOut, jobject obj, const char *methodName, 
+                  const char * methodSignature, ...);
+
+  // invoke a static method of a java class
+  void callStaticMethod(jvalue *retOut, jobject obj, const char *methodName, 
+                  const char * methodSignature, ...);
 
   // use macro concatenation to call the exact type of jni method and set
   // the return value (union) appropriately
@@ -349,6 +361,14 @@ public:
   }
 
 private:
+  jobject newObjectV(jclass cls, const char *className, const char *ctorSignature, 
+                      va_list args);
+  jmethodID getMethodId(jclass cls, const char *className, const char *methodName, 
+                        const char *methodSignature, bool isStatic);
+  void callMethodV(jvalue *retOut, jobject obj, const char *methodName, 
+                const char * methodSignature, bool isStatic, va_list args);
+
+private:
 
   JNIEnv *m_env;
 };
@@ -400,6 +420,7 @@ public:
 
   JNIEnv* getEnv();
   void printThrowableStackTrace(JNIEnv *env, jthrowable exce);
+  bool getThrowableStackTrace(JNIEnv *env, jthrowable exce, std::string &out);
 
 private:
   JNIHelper() {}

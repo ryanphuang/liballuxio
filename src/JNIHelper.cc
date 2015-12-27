@@ -24,6 +24,11 @@ void JavaThrowable::printStackTrace()
   JNIHelper::get().printThrowableStackTrace(m_env, m_except);
 }
 
+bool JavaThrowable::getStackTrace(std::string &out)
+{
+  return JNIHelper::get().getThrowableStackTrace(m_env, m_except, out);
+}
+
 ClassNotFoundException::ClassNotFoundException(const char *className,
     JavaThrowable *detail)
 {

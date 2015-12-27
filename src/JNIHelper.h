@@ -100,6 +100,7 @@ public:
   }
 
   void printStackTrace();
+  bool getStackTrace(std::string &out);
 
 private:
   JNIEnv *m_env;
@@ -117,7 +118,22 @@ public:
   NativeException(const char *msg, JavaThrowable *detail = NULL)
                     : m_msg(msg), m_detail(detail) {}
 
-  virtual const char* what() throw() { return m_msg.c_str(); }
+  virtual const char* what() throw() 
+  { 
+    if (m_detail == NULL) {
+      // no stack trace detail available 
+      return m_msg.c_str(); 
+    } else {
+      m_stack_trace = "";
+      if (!m_detail->getStackTrace(m_stack_trace)) {
+        return m_msg.c_str();
+      } else {
+        m_stack_trace.insert(0, "\nJava stack trace:\n");
+        m_stack_trace.insert(0, m_msg);
+        return m_stack_trace.c_str();
+      }
+    }
+  }
 
   /**
    * Get the original Java exception that was thrown.
@@ -152,6 +168,7 @@ public:
 protected:
   JavaThrowable *m_detail;
   std::string m_msg;
+  std::string m_stack_trace;
 };
 
 class ClassNotFoundException: public NativeException {

@@ -78,7 +78,7 @@ int TachyonClient::getFileId(const char *path)
   if (uri == NULL)
     return -1;
   m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_GET_FILEID_METHD, 
-                "(Ltachyon/TachyonURI;)I", false, uri->getJObj());
+                    "(Ltachyon/TachyonURI;)I", false, uri->getJObj());
   delete uri;
   return ret.i;
 }
@@ -91,7 +91,7 @@ int TachyonClient::createFile(const char * path)
   jPathStr = m_env.newStringUTF(path, "path");
 
   m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_CREATE_FILE_METHD, 
-                "(Ljava/lang/String;)I", false, jPathStr);
+                    "(Ljava/lang/String;)I", false, jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.i;
 }
@@ -129,7 +129,7 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
   
   jPathStr = m_env.newStringUTF(path, "path");
   m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
-                "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
+                    "(Ljava/lang/String;Z)Z", false, jPathStr, (jboolean) recursive);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.z;
 }
@@ -138,63 +138,56 @@ bool TachyonClient::deletePath(int fid, bool recursive)
 {
   jvalue ret;
   m_env.callMethod(&ret, m_obj, TFS_CLS, TFS_DELETE_FILE_METHD, 
-                "(IZ)Z", false, (jint) fid, (jboolean) recursive);
+                    "(IZ)Z", false, (jint) fid, (jboolean) recursive);
   return ret.z;
 }
 
 long TachyonFile::length()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_LENGTH_METHD, 
-                "()J", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_LENGTH_METHD, "()J", false);
   return ret.j;
 }
 
 bool TachyonFile::isFile()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISFILE_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISFILE_METHD, "()Z", false);
   return ret.z;
 }
 
 bool TachyonFile::isComplete()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISCOMPLETE_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISCOMPLETE_METHD, "()Z", false);
   return ret.z;
 }
 
 bool TachyonFile::isDirectory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISDIRECTORY_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISDIRECTORY_METHD, "()Z", false);
   return ret.z;
 }
 
 bool TachyonFile::isInMemory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISINMEMORY_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_ISINMEMORY_METHD, "()Z", false);
   return ret.z;
 }
 
 bool TachyonFile::needPin()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_NEEDPIN_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_NEEDPIN_METHD, "()Z", false);
   return ret.z;
 }
 
 bool TachyonFile::recache()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_RECACHE_METHD,
-                "()Z", false);
+  m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_RECACHE_METHD, "()Z", false);
   return ret.z;
 }
 
@@ -206,7 +199,7 @@ char * TachyonFile::getPath()
   char *retPath;
 
   m_env.callMethod(&ret, m_obj, TFILE_CLS, TFILE_PATH_METHD, 
-                "()Ljava/lang/String;", false);
+                    "()Ljava/lang/String;", false);
   if (ret.l == NULL)
     return NULL;
   jpath = (jstring) ret.l;
@@ -282,8 +275,7 @@ jByteBuffer ByteBuffer::allocate(int capacity)
 int InStream::readImpl(const char* clsname) 
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD,
-                "()I", false);
+  m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD, "()I", false);
   return ret.i;
 }
 
@@ -297,10 +289,10 @@ int InStream::readImpl(const char* clsname, void *buff, int length, int off, int
     jBuf = m_env.newByteArray(length);
     if (off < 0 || maxLen <= 0 || length == maxLen)
       m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD,
-                    "([B)I", false, jBuf);
+                        "([B)I", false, jBuf);
     else
       m_env.callMethod(&ret, m_obj, clsname, TISTREAM_READ_METHD,
-                    "([BII)I", false, jBuf, off, maxLen);
+                        "([BII)I", false, jBuf, off, maxLen);
   } catch (NativeException) {
     if (jBuf != NULL) {
       m_env->DeleteLocalRef(jBuf);
@@ -317,21 +309,18 @@ int InStream::readImpl(const char* clsname, void *buff, int length, int off, int
 
 void InStream::closeImpl(const char* clsname)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_CLOSE_METHD, 
-      "()V", false);
+  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_CLOSE_METHD, "()V", false);
 }
 
 void InStream::seekImpl(const char* clsname, long pos)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_SEEK_METHD, 
-      "(J)V", false, (jlong) pos);
+  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_SEEK_METHD, "(J)V", false, (jlong) pos);
 }
 
 long InStream::skipImpl(const char* clsname, long n)
 {
   jvalue ret;
-  m_env.callMethod(NULL, m_obj, clsname, 
-                TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
+  m_env.callMethod(NULL, m_obj, clsname, TISTREAM_SKIP_METHD, "(J)J", false, (jlong) n);
   return ret.j;
 }
 
@@ -490,27 +479,23 @@ void RemoteBlockInStream::seek(long pos)
 
 void OutStream::cancelImpl(const char* clsname)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CANCEL_METHD, 
-      "()V", false);
+  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CANCEL_METHD, "()V", false);
 }
 
 void OutStream::closeImpl(const char* clsname)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CLOSE_METHD, 
-      "()V", false);
+  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_CLOSE_METHD, "()V", false);
 }
 
 void OutStream::flushImpl(const char* clsname)
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_FLUSH_METHD, 
-      "()V", false);
+  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_FLUSH_METHD, "()V", false);
 }
 
 
 void OutStream::writeImpl(const char* clsname, int byte) 
 {
-  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_WRITE_METHD,
-      "(I)V", false, (jint) byte);
+  m_env.callMethod(NULL, m_obj, clsname, TOSTREAM_WRITE_METHD, "(I)V", false, (jint) byte);
 }
 
 void OutStream::writeImpl(const char* clsname, const void *buff, int length, 

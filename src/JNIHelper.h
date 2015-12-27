@@ -161,28 +161,18 @@ public:
 };
 
 class Env;
+class ClassCache;
 class JNIHelper;
-
-class GlobalClassCache {
-public: 
-  GlobalClassCache() {}
-  jclass get(const char *, Env* env); 
-  bool set(const char *, jclass);
-
-private:
-  std::map<const char *, void *>  m_cls_map;
-  Mutex m_lock;
-};
 
 class Env {
 
 public:
-  explicit Env();
-  explicit Env(JNIEnv* env): m_env(env) {}
-
+  Env();
+  Env(JNIEnv* env): m_env(env) {}
   Env(Env const & copy): m_env(copy.m_env) {}
 
-  JNIEnv* get() { return m_env; }
+  operator JNIEnv *() const { return m_env; }
+  JNIEnv *operator ->() { return m_env; }
 
   // simple FindClass wrapper with exception checking
   jclass findClass(const char *className);
@@ -192,6 +182,7 @@ public:
   jclass findClassAndCache(const char *className);
 
   jobject newGlobalRef(jobject obj);
+  void deleteGlobalRef(jobject obj);
   void deleteLocalRef(jobject obj);
 
   // get method id in a java class
@@ -209,6 +200,17 @@ public:
 
   // get a method's return type based on the signature
   bool getMethodRetType(char * rettOut, const char *methodSignature);
+
+  /** Exception related methods **/
+  bool hasException();
+  void checkException();
+  void checkExceptionAndClear();
+  void checkExceptionAndAbort();
+  void checkExceptionAndPrint();
+
+  bool getClassName(jclass cls, jobject instance, std::string& nameStr);
+  bool jstringToString(jstring str, std::string& cStr);
+  bool throwableToString(jthrowable except, std::string& exceptStr);
 
   #define GET_JNI_X_FIELD(R, T)                                                   \
   R get##T##Field(jobject obj, jfieldID fid)                                      \
@@ -296,23 +298,36 @@ public:
     checkExceptionAndClear();
   }
 
-  bool hasException() {
-    return m_env->ExceptionCheck();
-  }
-
-  void checkException();
-  void checkExceptionAndClear();
-  void checkExceptionAndAbort();
-  void checkExceptionAndPrint();
-
-  bool getClassName(jclass cls, jobject instance, std::string& nameStr);
-  bool jstringToString(jstring str, std::string& cStr);
-  bool throwableToString(jthrowable except, std::string& exceptStr);
-
 private:
 
   JNIEnv* m_env;
 };
+
+/**
+ * Cache for holding JNI class resolution results. 
+ * Upon caching, a global reference will be created to hold the class.
+ */
+class ClassCache {
+public: 
+  ~ClassCache();
+  static ClassCache* instance(JNIEnv* env);
+
+  jclass get(const char *); 
+  bool set(const char *, jclass);
+
+private:
+  // hide constructor so the instance method is the only API for
+  // creating a cache
+  ClassCache(JNIEnv* env): m_env(env) {}
+
+private:
+  Env m_env;
+  std::map<const char *, jclass>  m_cls_map;
+  Mutex m_lock;
+
+  static std::map<JNIEnv*, ClassCache*> s_caches;
+};
+
 
 /**
  * A singleton helper class to obtain the JNI env and facilitate other common
@@ -328,7 +343,6 @@ public:
   ~JNIHelper() {}
 
   JNIEnv* getEnv();
-  GlobalClassCache* getClassCache() { return &m_cls_cache; }
 
 private:
   JNIHelper() {}
@@ -336,7 +350,6 @@ private:
   void operator=(JNIHelper const &);
 
   Mutex m_env_lock;
-  GlobalClassCache m_cls_cache;
 }; // class JNIHelper
 
 }} // namespace Tachyon::JNI

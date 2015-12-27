@@ -17,6 +17,8 @@
 
 using namespace Tachyon::JNI;
 
+std::map<JNIEnv*, ClassCache*> ClassCache::s_caches;
+
 ClassNotFoundException::ClassNotFoundException(const char* className)
 {
   std::ostringstream ss;
@@ -61,43 +63,63 @@ FieldNotFoundException::FieldNotFoundException(const char* className,
   m_msg = ss.str();
 }
 
-jclass GlobalClassCache::get(const char *className, Env* env)
+ClassCache* ClassCache::instance(JNIEnv* env)
+{
+  std::map<JNIEnv*, ClassCache*>::iterator it = s_caches.find(env);
+  if (it != s_caches.end()) {
+    return it->second;
+  }
+  ClassCache* cache = new ClassCache(env);
+  s_caches.insert(std::make_pair(env, cache));
+  return cache;
+}
+
+jclass ClassCache::get(const char *className)
 {
   m_lock.lock();
-  std::map<const char *, void *>::iterator it = m_cls_map.find(className);
+  std::map<const char *, jclass>::iterator it = m_cls_map.find(className);
   if (it != m_cls_map.end()) {
     // found in cache
     m_lock.unlock();
     return (jclass) it->second;
   }
   // cache miss, find the class and put into cache
+  jclass globalCls = NULL;
   try {
-    jclass cls = env->findClass(className);
-    if (cls == NULL) {
-      throw ClassNotFoundException(className);
-    }
+    jclass cls = m_env.findClass(className);
     // find in env, first create a global reference (otherwise, the reference 
     // will be can be dangling), then update cache
-    jclass globalCls = (jclass) env->newGlobalRef(cls);
-    if (globalCls == NULL) {
-      throw NewGlobalRefException(className);
-    }
-    env->deleteLocalRef(cls); // delete local reference
-    m_cls_map.insert(std::pair<const char *, void *>(className, globalCls));
+    globalCls = (jclass) m_env.newGlobalRef(cls);
+    m_env.deleteLocalRef(cls); // delete local reference
+    m_cls_map.insert(std::make_pair(className, globalCls));
     m_lock.unlock();
     return globalCls;
   } catch (...) { 
+    if (globalCls != NULL) {
+      m_env.deleteGlobalRef(globalCls);
+    }
     m_lock.unlock(); // unlock before re-throw
     throw;
   }
 }
 
-bool GlobalClassCache::set(const char *className, jclass cls)
+bool ClassCache::set(const char *className, jclass cls)
 {
   m_lock.lock();
-  m_cls_map.insert(std::pair<const char *, void *>(className, cls));
+  m_cls_map.insert(std::make_pair(className, cls));
   m_lock.unlock();
   return true;
+}
+
+ClassCache::~ClassCache()
+{
+  std::map<const char *, jclass>::iterator it;
+  for (it = m_cls_map.begin(); it != m_cls_map.end(); ++it) {
+    jclass cls = (jclass) it->second;
+    if (cls != NULL) {
+      m_env->DeleteGlobalRef(cls);
+    }
+  }
 }
 
 Env::Env()
@@ -117,7 +139,7 @@ jclass Env::findClass(const char* className)
 
 jclass Env::findClassAndCache(const char* className)
 {
-  return JNIHelper::get().getClassCache()->get(className, this);
+  return ClassCache::instance(m_env)->get(className);
 }
 
 jmethodID Env::getMethodId(const char *className, const char *methodName, 
@@ -169,6 +191,11 @@ void Env::deleteLocalRef(jobject obj)
   m_env->DeleteLocalRef(obj);
 }
 
+void Env::deleteGlobalRef(jobject obj)
+{
+  m_env->DeleteGlobalRef(obj);
+}
+
 bool Env::jstringToString(jstring str, std::string& cStr)
 {
   if (str != NULL) {
@@ -210,6 +237,10 @@ bool Env::throwableToString(jthrowable except, std::string& exceptStr)
   return true;
 }
 
+bool Env::hasException() 
+{
+  return m_env->ExceptionCheck();
+}
 
 void Env::checkException()
 {

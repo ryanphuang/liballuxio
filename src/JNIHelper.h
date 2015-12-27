@@ -138,7 +138,7 @@ public:
    */
   void dump() const
   {
-    fprintf(stderr, "Message: %s", m_msg.c_str());
+    fprintf(stderr, "Message: %s\nFrom Java: ", m_msg.c_str());
     printDetailStackTrace();
   }
 

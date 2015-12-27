@@ -291,7 +291,9 @@ public:
   {                                                                             \
     R ret = m_env->Call##T##MethodV(obj, mid, args);                            \
     checkExceptionAndClear();                                                   \
-    retOut->F = ret;                                                            \
+    if (retOut != NULL) {                                                       \
+      retOut->F = ret;                                                          \
+    }                                                                           \
   }
     
   // refer to JNI specification for the encodings
@@ -313,7 +315,9 @@ public:
   {                                                                             \
     R ret = m_env->CallStatic##T##MethodV(cls, mid, args);                      \
     checkExceptionAndClear();                                                   \
-    retOut->F = ret;                                                            \
+    if (retOut != NULL) {                                                       \
+      retOut->F = ret;                                                          \
+    }                                                                           \
   }
 
   // refer to JNI specification for the encodings

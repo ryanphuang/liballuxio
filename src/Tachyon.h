@@ -12,6 +12,8 @@
 #include<jni.h>
 #include<stdint.h>
 
+#include "JNIHelper.h"
+
 #define TFS_CLS                     "tachyon/client/TachyonFS"
 #define TFS_GET_METHD               "get"
 #define TFS_GET_FILE_METHD          "getFile"
@@ -116,8 +118,7 @@ typedef OutStream* jOutStream;
 
 class JNIObjBase {
   public:
-    JNIObjBase(JNIEnv* env, jobject localObj) {
-      m_env = env;
+    JNIObjBase(jni::Env env, jobject localObj): m_env(env) {
       m_obj = env->NewGlobalRef(localObj);
       // this means after the constructor, the localObj will be destroyed
       env->DeleteLocalRef(localObj);
@@ -126,10 +127,10 @@ class JNIObjBase {
     ~JNIObjBase() { m_env->DeleteGlobalRef(m_obj); }
 
     jobject getJObj() { return m_obj; }
-    JNIEnv *getJEnv() { return m_env; }
+    jni::Env& getEnv() { return m_env; }
 
   protected:
-    JNIEnv *m_env;
+    jni::Env m_env;
     jobject m_obj; // the underlying jobject
 };
 
@@ -154,13 +155,13 @@ class TachyonClient : public JNIObjBase {
 
   private:
     // hide constructor, must be instantiated using createClient method
-    TachyonClient(JNIEnv *env, jobject tfs) : JNIObjBase(env, tfs) {}
+    TachyonClient(jni::Env env, jobject tfs) : JNIObjBase(env, tfs) {}
 
 };
 
 class TachyonFile : public JNIObjBase {
   public:
-    TachyonFile(JNIEnv *env, jobject tfile) : JNIObjBase(env, tfile){}
+    TachyonFile(jni::Env env, jobject tfile) : JNIObjBase(env, tfile){}
     
     long length();
 
@@ -190,7 +191,7 @@ class TachyonFile : public JNIObjBase {
 
 class TachyonByteBuffer : public JNIObjBase {
   public:
-    TachyonByteBuffer(JNIEnv *env, jobject tbbuf) : JNIObjBase(env, tbbuf) {}
+    TachyonByteBuffer(jni::Env env, jobject tbbuf) : JNIObjBase(env, tbbuf) {}
 
     jByteBuffer getData();
     void close();
@@ -199,14 +200,14 @@ class TachyonByteBuffer : public JNIObjBase {
 
 class ByteBuffer : public JNIObjBase {
   public:
-    ByteBuffer(JNIEnv *env, jobject bbuf): JNIObjBase(env, bbuf){}
+    ByteBuffer(jni::Env env, jobject bbuf): JNIObjBase(env, bbuf){}
 
     static jByteBuffer allocate(int capacity);
 };
 
 class InStream : public JNIObjBase {
   public:
-    InStream(JNIEnv *env, jobject istream): JNIObjBase(env, istream){}
+    InStream(jni::Env env, jobject istream): JNIObjBase(env, istream){}
   
     void close();
     int read();
@@ -260,7 +261,7 @@ class RemoteBlockInStream : public BlockInStream {
 
 class OutStream : public JNIObjBase {
   public:
-    OutStream(JNIEnv *env, jobject ostream): JNIObjBase(env, ostream){}
+    OutStream(jni::Env env, jobject ostream): JNIObjBase(env, ostream){}
 
     void cancel();
     void close();
@@ -304,7 +305,7 @@ class TachyonURI : public JNIObjBase {
     static jTachyonURI newURI(const char *scheme, const char *authority, const char *path);
     static jTachyonURI newURI(jTachyonURI parent, jTachyonURI child);
 
-    TachyonURI(JNIEnv *env, jobject uri): JNIObjBase(env, uri){}
+    TachyonURI(jni::Env env, jobject uri): JNIObjBase(env, uri){}
 };
 
 // non-standard tachyon API
@@ -327,7 +328,7 @@ class TachyonKV : public JNIObjBase {
     jTachyonClient getClient() { return m_client; }
 
   private:
-    TachyonKV(jTachyonClient client, jobject tkv) : JNIObjBase(client->getJEnv(), tkv) {
+    TachyonKV(jTachyonClient client, jobject tkv) : JNIObjBase(client->getEnv(), tkv) {
       m_client = TachyonClient::copyClient(client);
     } 
 
@@ -342,8 +343,9 @@ class TachyonKV : public JNIObjBase {
 extern "C" {
 #endif
 
-jthrowable enumObjReadType(JNIEnv *env, jobject *objOut, tachyon::ReadType readType);
-jthrowable enumObjWriteType(JNIEnv *env, jobject *objOut, tachyon::WriteType writeType);
+jobject enumObjReadType(tachyon::jni::Env& env, tachyon::ReadType readType);
+jobject enumObjWriteType(tachyon::jni::Env& env, tachyon::WriteType writeType);
+
 char* fullTachyonPath(const char *masterUri, const char *filePath);
 
 #ifdef __cplusplus

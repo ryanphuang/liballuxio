@@ -19,48 +19,58 @@ using namespace Tachyon::JNI;
 
 std::map<JNIEnv*, ClassCache*> ClassCache::s_caches;
 
-ClassNotFoundException::ClassNotFoundException(const char* className)
+ClassNotFoundException::ClassNotFoundException(const char* className,
+    JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not find class " << className;
   m_msg = ss.str();
+  m_detail = detail;
 }
 
 MethodNotFoundException::MethodNotFoundException(const char* className, 
-    const char* methodName) 
+    const char* methodName, JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not find method " << methodName << " in class " << className; 
   m_msg = ss.str();
+  m_detail = detail;
 }
 
-NewGlobalRefException::NewGlobalRefException(const char* refName)
+NewGlobalRefException::NewGlobalRefException(const char* refName,
+    JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not create global reference for " << refName;
   m_msg = ss.str();
+  m_detail = detail;
 }
 
-NewObjectException::NewObjectException(const char* className)
+NewObjectException::NewObjectException(const char* className,
+    JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not create object for class " << className;
   m_msg = ss.str();
+  m_detail = detail;
 }
 
-NewEnumException::NewEnumException(const char* className, const char * valueName) 
+NewEnumException::NewEnumException(const char* className, 
+    const char * valueName, JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not create enum for " << valueName << " of class " << className;
   m_msg = ss.str();
+  m_detail = detail;
 }
 
 FieldNotFoundException::FieldNotFoundException(const char* className, 
-    const char* fieldName) 
+    const char* fieldName, JavaThrowableException* detail)
 {
   std::ostringstream ss;
   ss << "Could not find field " << fieldName << " in class " << className;
   m_msg = ss.str();
+  m_detail = detail;
 }
 
 ClassCache* ClassCache::instance(JNIEnv* env)

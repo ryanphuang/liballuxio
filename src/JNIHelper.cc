@@ -15,17 +15,17 @@
 #include <string>
 #include <sstream>
 
-using namespace Tachyon::JNI;
+using namespace tachyon::jni;
 
-std::map<JNIEnv*, ClassCache*> ClassCache::s_caches;
+std::map<JNIEnv *, ClassCache *> ClassCache::s_caches;
 
 void JavaThrowable::printStackTrace()
 {
   JNIHelper::get().printThrowableStackTrace(m_env, m_except);
 }
 
-ClassNotFoundException::ClassNotFoundException(const char* className,
-    JavaThrowable* detail)
+ClassNotFoundException::ClassNotFoundException(const char *className,
+    JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not find class " << className;
@@ -33,8 +33,8 @@ ClassNotFoundException::ClassNotFoundException(const char* className,
   m_detail = detail;
 }
 
-MethodNotFoundException::MethodNotFoundException(const char* className, 
-    const char* methodName, JavaThrowable* detail)
+MethodNotFoundException::MethodNotFoundException(const char *className, 
+    const char *methodName, JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not find method " << methodName << " in class " << className; 
@@ -42,8 +42,8 @@ MethodNotFoundException::MethodNotFoundException(const char* className,
   m_detail = detail;
 }
 
-NewGlobalRefException::NewGlobalRefException(const char* refName,
-    JavaThrowable* detail)
+NewGlobalRefException::NewGlobalRefException(const char *refName,
+    JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not create global reference for " << refName;
@@ -51,8 +51,8 @@ NewGlobalRefException::NewGlobalRefException(const char* refName,
   m_detail = detail;
 }
 
-NewObjectException::NewObjectException(const char* className,
-    JavaThrowable* detail)
+NewObjectException::NewObjectException(const char *className,
+    JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not create object for class " << className;
@@ -60,8 +60,8 @@ NewObjectException::NewObjectException(const char* className,
   m_detail = detail;
 }
 
-NewEnumException::NewEnumException(const char* className, 
-    const char * valueName, JavaThrowable* detail)
+NewEnumException::NewEnumException(const char *className, 
+    const char *valueName, JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not create enum for " << valueName << " of class " << className;
@@ -69,8 +69,8 @@ NewEnumException::NewEnumException(const char* className,
   m_detail = detail;
 }
 
-FieldNotFoundException::FieldNotFoundException(const char* className, 
-    const char* fieldName, JavaThrowable* detail)
+FieldNotFoundException::FieldNotFoundException(const char *className, 
+    const char *fieldName, JavaThrowable *detail)
 {
   std::ostringstream ss;
   ss << "Could not find field " << fieldName << " in class " << className;
@@ -78,7 +78,7 @@ FieldNotFoundException::FieldNotFoundException(const char* className,
   m_detail = detail;
 }
 
-ClassCache* ClassCache::instance(JNIEnv* env)
+ClassCache* ClassCache::instance(JNIEnv *env)
 {
   std::map<JNIEnv*, ClassCache*>::iterator it = s_caches.find(env);
   if (it != s_caches.end()) {
@@ -142,7 +142,7 @@ Env::Env()
   m_env = JNIHelper::get().getEnv();
 }
 
-jclass Env::findClass(const char* className)
+jclass Env::findClass(const char *className)
 {
   jclass cls = m_env->FindClass(className);
   jthrowable except = m_env->ExceptionOccurred();
@@ -154,7 +154,7 @@ jclass Env::findClass(const char* className)
   return cls;
 }
 
-jclass Env::findClassAndCache(const char* className)
+jclass Env::findClassAndCache(const char *className)
 {
   return ClassCache::instance(m_env)->get(className);
 }
@@ -185,6 +185,18 @@ jmethodID Env::getMethodId(const char *className, const char *methodName,
     throw MethodNotFoundException(className, methodName);
   }
   return mid;
+}
+
+jstring Env::newStringUTF(const char *bytes, const char *err_desc)
+{
+  jstring str = m_env->NewStringUTF(bytes);
+  if (str == NULL) {
+    m_env->ExceptionClear(); // clear pending exception
+    std::string err = "Fail to allocate jstring for ";
+    err += err_desc;
+    throw NativeException(err.c_str());
+  }
+  return str;
 }
 
 jobject Env::newGlobalRef(jobject obj)
@@ -322,7 +334,7 @@ jobject Env::newClassObject(const char *className, const char *ctorSignature, ..
   return obj;
 }
 
-jobject Env::getEnumObject(const char *className, const char * valueName)
+jobject Env::getEnumObject(const char *className, const char *valueName)
 {
   jclass cls;
   jfieldID jid;
@@ -358,7 +370,7 @@ jthrowable Env::newRuntimeException(const char *message)
   return (jthrowable) rteObj;
 }
 
-bool Env::getMethodRetType(char * rettOut, const char *methodSignature)
+bool Env::getMethodRetType(char *rettOut, const char *methodSignature)
 {
   if (rettOut == NULL)
     return false;
@@ -372,7 +384,7 @@ bool Env::getMethodRetType(char * rettOut, const char *methodSignature)
 }
 
 void Env::callMethod(jvalue *retOut, jobject obj, const char *className, 
-      const char *methodName, const char * methodSignature, bool isStatic, ...)
+      const char *methodName, const char *methodSignature, bool isStatic, ...)
 {
   va_list args;
   jclass cls;
@@ -524,7 +536,7 @@ JNIEnv* JNIHelper::getEnv()
   return env;
 }
 
-void JNIHelper::printThrowableStackTrace(JNIEnv* env, jthrowable exce)
+void JNIHelper::printThrowableStackTrace(JNIEnv *env, jthrowable exce)
 {
   jclass cls = env->FindClass("java/lang/Throwable");
   if (cls != NULL) {

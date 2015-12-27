@@ -45,7 +45,7 @@
 #define J_OBJ    'L'
 #define J_ARRAY  '['
 
-namespace Tachyon { namespace JNI {
+namespace tachyon { namespace jni {
 
 /**
  * simple pthread_mutex wrapper
@@ -83,7 +83,7 @@ private:
 class JavaThrowable {
 
 public:
-  JavaThrowable(JNIEnv* env, jthrowable except)
+  JavaThrowable(JNIEnv *env, jthrowable except)
   {
     m_env = env;
     m_except = (jthrowable) env->NewGlobalRef(except);
@@ -102,7 +102,7 @@ public:
   void printStackTrace();
 
 private:
-  JNIEnv* m_env;
+  JNIEnv *m_env;
   jthrowable m_except;
 };
 
@@ -114,12 +114,19 @@ private:
 class NativeException: public std::exception {
 public:
   NativeException() {}
-  NativeException(const char* msg, JavaThrowable* detail = NULL)
+  NativeException(const char *msg, JavaThrowable *detail = NULL)
                     : m_msg(msg), m_detail(detail) {}
 
   virtual const char* what() throw() { return m_msg.c_str(); }
 
   JavaThrowable* detail() const { return m_detail; }
+
+  void printDetailStackTrace()
+  {
+    if (m_detail != NULL) {
+      m_detail->printStackTrace();
+    }
+  }
 
   // We don't free the m_detail in destructor because the exception
   // might be re-thrown, and we don't want to destroy the detail.
@@ -128,44 +135,44 @@ public:
   ~NativeException() throw() {}
 
 protected:
-  JavaThrowable* m_detail;
+  JavaThrowable *m_detail;
   std::string m_msg;
 };
 
 class ClassNotFoundException: public NativeException {
 public:
-  ClassNotFoundException(const char* className, 
-          JavaThrowable* detail = NULL); 
+  ClassNotFoundException(const char *className, 
+          JavaThrowable *detail = NULL); 
 };
 
 class MethodNotFoundException: public NativeException {
 public:
-  MethodNotFoundException(const char* className, const char* methodName,
-          JavaThrowable* detail = NULL); 
+  MethodNotFoundException(const char *className, const char *methodName,
+          JavaThrowable *detail = NULL); 
 };
 
 class FieldNotFoundException: public NativeException {
 public:
-  FieldNotFoundException(const char* className, const char* fieldName,
-          JavaThrowable* detail = NULL); 
+  FieldNotFoundException(const char *className, const char *fieldName,
+          JavaThrowable *detail = NULL); 
 };
 
 class NewGlobalRefException: public NativeException {
 public:
-  NewGlobalRefException(const char* refName,
-          JavaThrowable* detail = NULL); 
+  NewGlobalRefException(const char *refName,
+          JavaThrowable *detail = NULL); 
 };
 
 class NewObjectException: public NativeException {
 public:
-  NewObjectException(const char* className,
-          JavaThrowable* detail = NULL); 
+  NewObjectException(const char *className,
+          JavaThrowable *detail = NULL); 
 };
 
 class NewEnumException: public NativeException {
 public:
-  NewEnumException(const char* className, const char * valueName,
-          JavaThrowable* detail = NULL); 
+  NewEnumException(const char *className, const char *valueName,
+          JavaThrowable *detail = NULL); 
 };
 
 class Env;
@@ -176,11 +183,13 @@ class Env {
 
 public:
   Env();
-  Env(JNIEnv* env): m_env(env) {}
+  Env(JNIEnv *env): m_env(env) {}
   Env(Env const & copy): m_env(copy.m_env) {}
 
+  // make it be able to cast to JNIEnv* 
   operator JNIEnv *() const { return m_env; }
   JNIEnv *operator ->() { return m_env; }
+  JNIEnv *get() {return m_env; }
 
   // simple FindClass wrapper with exception checking
   jclass findClass(const char *className);
@@ -189,6 +198,7 @@ public:
   // inside GlobalClassCache
   jclass findClassAndCache(const char *className);
 
+  jstring newStringUTF(const char *bytes, const char *err_desc);
   jobject newGlobalRef(jobject obj);
   void deleteGlobalRef(jobject obj);
   void deleteLocalRef(jobject obj);
@@ -308,7 +318,7 @@ public:
 
 private:
 
-  JNIEnv* m_env;
+  JNIEnv *m_env;
 };
 
 /**
@@ -318,7 +328,7 @@ private:
 class ClassCache {
 public: 
   ~ClassCache();
-  static ClassCache* instance(JNIEnv* env);
+  static ClassCache* instance(JNIEnv *env);
 
   jclass get(const char *); 
   bool set(const char *, jclass);
@@ -326,14 +336,14 @@ public:
 private:
   // hide constructor so the instance method is the only API for
   // creating a cache
-  ClassCache(JNIEnv* env): m_env(env) {}
+  ClassCache(JNIEnv *env): m_env(env) {}
 
 private:
   Env m_env;
   std::map<const char *, jclass>  m_cls_map;
   Mutex m_lock;
 
-  static std::map<JNIEnv*, ClassCache*> s_caches;
+  static std::map<JNIEnv *, ClassCache *> s_caches;
 };
 
 
@@ -351,7 +361,7 @@ public:
   ~JNIHelper() {}
 
   JNIEnv* getEnv();
-  void printThrowableStackTrace(JNIEnv* env, jthrowable exce);
+  void printThrowableStackTrace(JNIEnv *env, jthrowable exce);
 
 private:
   JNIHelper() {}

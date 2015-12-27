@@ -215,6 +215,8 @@ public:
 
   jstring newStringUTF(const char *bytes, const char *err_desc);
   jobject newGlobalRef(jobject obj);
+  jbyteArray newByteArray(jsize length);
+
   void deleteGlobalRef(jobject obj);
   void deleteLocalRef(jobject obj);
 

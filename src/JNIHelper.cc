@@ -215,6 +215,17 @@ jobject Env::newGlobalRef(jobject obj)
   return ret;
 }
 
+jbyteArray Env::newByteArray(jsize length)
+{
+  jbyteArray jBuf;
+  jBuf = m_env->NewByteArray(length);
+  if (jBuf == NULL) {
+    m_env->ExceptionClear();
+    throw NativeException("Fail to allocate jByteArray");
+  }
+  return jBuf;
+}
+
 void Env::deleteLocalRef(jobject obj)
 {
   m_env->DeleteLocalRef(obj);

@@ -386,7 +386,6 @@ jobject Env::newObject(const char *className, const char *ctorSignature, ...)
   jobject obj;
 
   cls = findClassAndCache(className);
-  
   try {
     va_start(args, ctorSignature);
     obj = newObjectV(cls, className, ctorSignature, args);
@@ -482,11 +481,11 @@ bool Env::getMethodRetType(char *rettOut, const char *methodSignature)
 void Env::callMethod(jvalue *retOut, jobject obj, const char *methodName, 
                       const char *methodSignature, ...)
 {
-
   va_list args;
   try {
     va_start(args, methodSignature);
-    callMethodV(retOut, obj, methodName, methodSignature, false, args);
+    // here, we supply with an empty class name
+    callMethodV(retOut, obj, "", methodName, methodSignature, false, args);
     va_end(args);
   } catch(NativeException) {
     va_end(args);
@@ -494,15 +493,36 @@ void Env::callMethod(jvalue *retOut, jobject obj, const char *methodName,
   }
 }
 
-void Env::callMethodV(jvalue *retOut, jobject obj, const char *methodName, 
-                      const char *methodSignature, bool isStatic, va_list args) 
+void Env::callStaticMethod(jvalue *retOut, const char *className, 
+      const char *methodName, const char *methodSignature, ...)
+{
+  va_list args;
+  try {
+    va_start(args, methodSignature);
+    // static method does not have a object to invoke on
+    callMethodV(retOut, NULL, className, methodName, methodSignature, true, args);
+    va_end(args);
+  } catch(NativeException) {
+    va_end(args);
+    throw;
+  }
+}
+
+void Env::callMethodV(jvalue *retOut, jobject obj, const char *className, 
+                      const char *methodName, const char *methodSignature, 
+                      bool isStatic, va_list args) 
 {
   jclass cls;
   jmethodID mid;
   char retType;
 
-  cls = m_env->GetObjectClass(obj);
-  mid = getMethodId(cls, "", methodName, methodSignature, isStatic);
+  if (obj != NULL) {
+    cls = m_env->GetObjectClass(obj);
+  } else {
+    // this is typically the case for static method call
+    cls = findClassAndCache(className);
+  }
+  mid = getMethodId(cls, className, methodName, methodSignature, isStatic);
   if (!getMethodRetType(&retType, methodSignature)) {
     std::ostringstream ss;
     ss << "Could not get return type for method " <<  methodName;

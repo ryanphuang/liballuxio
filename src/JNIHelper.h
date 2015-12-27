@@ -293,8 +293,8 @@ public:
                   const char * methodSignature, ...);
 
   // invoke a static method of a java class
-  void callStaticMethod(jvalue *retOut, jobject obj, const char *methodName, 
-                  const char * methodSignature, ...);
+  void callStaticMethod(jvalue *retOut, const char *className, 
+                  const char *methodName, const char * methodSignature, ...);
 
   // use macro concatenation to call the exact type of jni method and set
   // the return value (union) appropriately
@@ -365,8 +365,9 @@ private:
                       va_list args);
   jmethodID getMethodId(jclass cls, const char *className, const char *methodName, 
                         const char *methodSignature, bool isStatic);
-  void callMethodV(jvalue *retOut, jobject obj, const char *methodName, 
-                const char * methodSignature, bool isStatic, va_list args);
+  void callMethodV(jvalue *retOut, jobject obj, const char *className, 
+                    const char *methodName, const char * methodSignature, 
+                    bool isStatic, va_list args);
 
 private:
 

@@ -20,7 +20,7 @@ using namespace tachyon::jni;
 
 std::map<JNIEnv *, ClassCache *> ClassCache::s_caches;
 
-void JavaThrowable::printStackTrace()
+void JavaThrowable::printStackTrace() const
 {
   JNIHelper::get().printThrowableStackTrace(m_env, m_except);
 }

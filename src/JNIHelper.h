@@ -99,7 +99,7 @@ public:
     return (jthrowable) m_env->NewLocalRef(m_except);
   }
 
-  void printStackTrace();
+  void printStackTrace() const;
   bool getStackTrace(std::string &out);
 
 private:
@@ -118,21 +118,12 @@ public:
   NativeException(const char *msg, JavaThrowable *detail = NULL)
                     : m_msg(msg), m_detail(detail) {}
 
-  virtual const char* what() throw() 
+  /**
+   * Get the exception message.
+   */
+  const char* what()
   { 
-    if (m_detail == NULL) {
-      // no stack trace detail available 
-      return m_msg.c_str(); 
-    } else {
-      m_stack_trace = "";
-      if (!m_detail->getStackTrace(m_stack_trace)) {
-        return m_msg.c_str();
-      } else {
-        m_stack_trace.insert(0, "\nJava stack trace:\n");
-        m_stack_trace.insert(0, m_msg);
-        return m_stack_trace.c_str();
-      }
-    }
+    return m_msg.c_str(); 
   }
 
   /**
@@ -143,16 +134,28 @@ public:
   JavaThrowable* detail() const { return m_detail; }
 
   /**
+   * Dump the exception information to stderr.
+   */
+  void dump() const
+  {
+    fprintf(stderr, "Message: %s", m_msg.c_str());
+    printDetailStackTrace();
+  }
+
+  /**
    * Discard this exception. Mainly clean up the original Java exception.
    */
   void discard()
-  { 
+  {
     if (m_detail != NULL) {
       delete m_detail;
     }
   }
 
-  void printDetailStackTrace()
+  /**
+   * Print the stack trace.
+   */
+  void printDetailStackTrace() const
   {
     if (m_detail != NULL) {
       m_detail->printStackTrace();

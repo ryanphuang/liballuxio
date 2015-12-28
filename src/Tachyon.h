@@ -45,10 +45,6 @@
 
 // InStream
 #define TISTREAM_CLS                "tachyon/client/InStream"
-#define TISTREAM_READ_METHD         "read"
-#define TISTREAM_CLOSE_METHD        "close"
-#define TISTREAM_SEEK_METHD         "seek"
-#define TISTREAM_SKIP_METHD         "skip"
 #define TFILE_ISTREAM_CLS           "tachyon/client/FileInStream"
 #define TBLOCK_ISTREAM_CLS          "tachyon/client/BlockInStream"
 #define TLOCAL_BLOCK_ISTREAM_CLS    "tachyon/client/LocalBlockInStream"
@@ -57,10 +53,6 @@
 
 // OutStream
 #define TOSTREAM_CLS                "tachyon/client/OutStream"
-#define TOSTREAM_WRITE_METHD        "write"
-#define TOSTREAM_CLOSE_METHD        "close"
-#define TOSTREAM_FLUSH_METHD        "flush"
-#define TOSTREAM_CANCEL_METHD       "cancel"
 #define TFILE_OSTREAM_CLS           "tachyon/client/FileOutStream"
 #define TBLOCK_OSTREAM_CLS          "tachyon/client/BlockOutStream"
 
@@ -216,47 +208,21 @@ class InStream : public JNIObjBase {
     void seek(long pos);
     long skip(long n);
   
-  protected:
-    void closeImpl();
-    int readImpl();
-    int readImpl(void *buff, int length, int off, int maxLen);
-    void seekImpl(long pos);
-    long skipImpl(long n); 
 };
 
 class FileInStream : public InStream {
-    void close();
-    int read();
-    int read(void *buff, int length, int off, int maxLen);
-    void seek(long pos);
-    long skip(long n);
 };
 
 class EmptyBlockInStream : public InStream {
-    void close();
-    int read();
-    int read(void *buff, int length, int off, int maxLen);
-    void seek(long pos);
-    long skip(long n);
 };
 
 class BlockInStream : public InStream {
 };
 
 class LocalBlockInStream : public BlockInStream {
-    void close();
-    int read();
-    int read(void *buff, int length, int off, int maxLen);
-    void seek(long pos);
-    long skip(long n);
 };
 
 class RemoteBlockInStream : public BlockInStream {
-    void close();
-    int read();
-    int read(void *buff, int length, int off, int maxLen);
-    void seek(long pos);
-    long skip(long n);
 };
 
 class OutStream : public JNIObjBase {
@@ -270,29 +236,12 @@ class OutStream : public JNIObjBase {
     void write(const void *buff, int length);
     void write(const void *buff, int length, int off, int maxLen);
 
-  protected:
-    void cancelImpl();
-    void closeImpl();
-    void flushImpl();
-    void writeImpl(int byte);
-    void writeImpl(const void *buff, int length, int off, int maxLen);
 };
 
 class FileOutStream : public OutStream {
-    void cancel();
-    void close();
-    void flush();
-    void write(int byte);
-    void write(const void *buff, int length, int off, int maxLen);
 };
 
 class BlockOutStream : public OutStream { 
-    void cancel();
-    void close();
-    void flush();
-    void write(int byte);
-    void write(const void *buff, int length, int off, int maxLen);
-
     bool canWrite(); //TODO
     long getBlockId(); //TODO
     long getBlockOffset(); //TODO

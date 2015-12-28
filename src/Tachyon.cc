@@ -271,14 +271,14 @@ jByteBuffer ByteBuffer::allocate(int capacity)
 //InStream
 //////////////////////////////////////////
 
-int InStream::readImpl() 
+int InStream::read()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "()I");
+  m_env.callMethod(&ret, m_obj, "read", "()I");
   return ret.i;
 }
 
-int InStream::readImpl(void *buff, int length, int off, int maxLen)
+int InStream::read(void *buff, int length, int off, int maxLen) 
 {
   jbyteArray jBuf;
   jvalue ret;
@@ -287,9 +287,9 @@ int InStream::readImpl(void *buff, int length, int off, int maxLen)
   try {
     jBuf = m_env.newByteArray(length);
     if (off < 0 || maxLen <= 0 || length == maxLen)
-      m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "([B)I", jBuf);
+      m_env.callMethod(&ret, m_obj, "read", "([B)I", jBuf);
     else
-      m_env.callMethod(&ret, m_obj, TISTREAM_READ_METHD, "([BII)I", jBuf, off, maxLen);
+      m_env.callMethod(&ret, m_obj, "read", "([BII)I", jBuf, off, maxLen);
   } catch (NativeException) {
     if (jBuf != NULL) {
       m_env->DeleteLocalRef(jBuf);
@@ -304,36 +304,6 @@ int InStream::readImpl(void *buff, int length, int off, int maxLen)
   return rdSz;
 }
 
-void InStream::closeImpl()
-{
-  m_env.callMethod(NULL, m_obj, TISTREAM_CLOSE_METHD, "()V");
-}
-
-void InStream::seekImpl(long pos)
-{
-  m_env.callMethod(NULL, m_obj, TISTREAM_SEEK_METHD, "(J)V", (jlong) pos);
-}
-
-long InStream::skipImpl(long n)
-{
-  jvalue ret;
-  m_env.callMethod(NULL, m_obj, TISTREAM_SKIP_METHD, "(J)J", (jlong) n);
-  return ret.j;
-}
-
-
-// Call the templates
-
-int InStream::read()
-{
-  return readImpl();
-}
-
-int InStream::read(void *buff, int length, int off, int maxLen) 
-{
-  return readImpl(buff, length, off, maxLen);
-}
-
 int InStream::read(void *buff, int length)
 {
   return read(buff, length, 0, length);
@@ -341,160 +311,36 @@ int InStream::read(void *buff, int length)
 
 void InStream::close()
 {
-  closeImpl();
+  m_env.callMethod(NULL, m_obj, "close", "()V");
 }
 
 void InStream::seek(long pos)
 {
-  seekImpl(pos);
+  m_env.callMethod(NULL, m_obj, "seek", "(J)V", (jlong) pos);
 }
 
 long InStream::skip(long n)
 {
-  return skipImpl(n);
-}
-
-//////////////////////////////////////////
-// FileInStream
-//////////////////////////////////////////
-
-int FileInStream::read()
-{
-  return readImpl();
-}
-
-int FileInStream::read(void *buff, int length, int off, int maxLen) 
-{
-  return readImpl(buff, length, off, maxLen);
-}
-
-void FileInStream::close()
-{
-  closeImpl();
-}
-
-long FileInStream::skip(long n)
-{
-  return skipImpl(n);
-}
-
-void FileInStream::seek(long pos)
-{
-  seekImpl(pos);
-}
-
-//////////////////////////////////////////
-// EmptyBlockInStream
-//////////////////////////////////////////
-
-int EmptyBlockInStream::read()
-{
-  return readImpl();
-}
-
-int EmptyBlockInStream::read(void *buff, int length, int off, int maxLen) 
-{
-  return readImpl(buff, length, off, maxLen);
-}
-
-void EmptyBlockInStream::close()
-{
-  closeImpl();
-}
-
-long EmptyBlockInStream::skip(long n)
-{
-  return skipImpl(n);
-}
-
-void EmptyBlockInStream::seek(long pos)
-{
-  seekImpl(pos);
-}
-
-//////////////////////////////////////////
-// LocalBlockInStream
-//////////////////////////////////////////
-
-int LocalBlockInStream::read()
-{
-  return readImpl();
-}
-
-int LocalBlockInStream::read(void *buff, int length, int off, int maxLen) 
-{
-  return readImpl(buff, length, off, maxLen);
-}
-
-void LocalBlockInStream::close()
-{
-  closeImpl();
-}
-
-long LocalBlockInStream::skip(long n)
-{
-  return skipImpl(n);
-}
-
-void LocalBlockInStream::seek(long pos)
-{
-  seekImpl(pos);
-}
-
-//////////////////////////////////////////
-// RemoteBlockInStream
-//////////////////////////////////////////
-
-int RemoteBlockInStream::read()
-{
-  return readImpl();
-}
-
-int RemoteBlockInStream::read(void *buff, int length, int off, int maxLen) 
-{
-  return readImpl(buff, length, off, maxLen);
-}
-
-void RemoteBlockInStream::close()
-{
-  closeImpl();
-}
-
-long RemoteBlockInStream::skip(long n)
-{
-  return skipImpl(n);
-}
-
-void RemoteBlockInStream::seek(long pos)
-{
-  seekImpl(pos);
+  jvalue ret;
+  m_env.callMethod(NULL, m_obj, "skip", "(J)J", (jlong) n);
+  return ret.j;
 }
 
 //////////////////////////////////////////
 // OutStream
 //////////////////////////////////////////
 
-void OutStream::cancelImpl()
+void OutStream::write(int byte) 
 {
-  m_env.callMethod(NULL, m_obj, TOSTREAM_CANCEL_METHD, "()V");
+  m_env.callMethod(NULL, m_obj, "write", "(I)V", (jint) byte);
 }
 
-void OutStream::closeImpl()
+void OutStream::write(const void *buff, int length)
 {
-  m_env.callMethod(NULL, m_obj, TOSTREAM_CLOSE_METHD, "()V");
+  write(buff, length, 0, length);
 }
 
-void OutStream::flushImpl()
-{
-  m_env.callMethod(NULL, m_obj, TOSTREAM_FLUSH_METHD, "()V");
-}
-
-void OutStream::writeImpl(int byte) 
-{
-  m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD, "(I)V", (jint) byte);
-}
-
-void OutStream::writeImpl(const void *buff, int length, 
+void OutStream::write(const void *buff, int length, 
                           int off, int maxLen)
 {
   jthrowable exception;
@@ -508,11 +354,9 @@ void OutStream::writeImpl(const void *buff, int length,
   // printf("byte array in write: %s\n", jbuff);
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
-    m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD,
-                  "([B)V", jBuf);
+    m_env.callMethod(NULL, m_obj, "write", "([B)V", jBuf);
   else
-    m_env.callMethod(NULL, m_obj, TOSTREAM_WRITE_METHD,
-                  "([BII)V", jBuf, (jint) off, (jint) maxLen);
+    m_env.callMethod(NULL, m_obj, "write", "([BII)V", jBuf, (jint) off, (jint) maxLen);
   m_env->DeleteLocalRef(jBuf);
 }
 
@@ -520,75 +364,17 @@ void OutStream::writeImpl(const void *buff, int length,
 
 void OutStream::cancel() 
 {
-  cancelImpl();
+  m_env.callMethod(NULL, m_obj, "cancel", "()V");
 }
 
 void OutStream::close()
 {
-  closeImpl();
+  m_env.callMethod(NULL, m_obj, "close", "()V");
 }
 
 void OutStream::flush()
 {
-  flushImpl();
-}
-
-void OutStream::write(const void *buff, int length, int off, int maxLen)
-{
-  writeImpl(buff, length, off, maxLen);
-}
-
-void OutStream::write(const void *buff, int length)
-{
-  write(buff, length, 0, length);
-}
-
-//////////////////////////////////////////
-// FileOutStream
-//////////////////////////////////////////
-
-void FileOutStream::cancel() 
-{
-  cancelImpl();
-}
-
-void FileOutStream::close()
-{
-  closeImpl();
-}
-
-void FileOutStream::flush()
-{
-  flushImpl();
-}
-
-void FileOutStream::write(const void *buff, int length, int off, int maxLen)
-{
-  writeImpl(buff, length, off, maxLen);
-}
-
-//////////////////////////////////////////
-// BlockOutStream
-//////////////////////////////////////////
-
-void BlockOutStream::cancel() 
-{
-  cancelImpl();
-}
-
-void BlockOutStream::close()
-{
-  closeImpl();
-}
-
-void BlockOutStream::flush()
-{
-  flushImpl();
-}
-
-void BlockOutStream::write(const void *buff, int length, int off, int maxLen)
-{
-  writeImpl(buff, length, off, maxLen);
+  m_env.callMethod(NULL, m_obj, "flush", "()V");
 }
 
 //////////////////////////////////////////

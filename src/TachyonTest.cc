@@ -187,7 +187,7 @@ int main(int argc, char*argv[])
     testDeleteFile(client, writef, false);
     testMkdir(client, "/tachyontest");
     testDeleteFile(client, "/tachyontest", true);
-    testGetSet(client);
+    // testGetSet(client);
     delete client;
   } catch (const jni::NativeException &e) {
     e.dump();

@@ -14,32 +14,12 @@
 
 #include "JNIHelper.h"
 
+#define BBUF_CLS                    "java/nio/ByteBuffer"
+
+#define TURI_CLS                    "tachyon/TachyonURI"
 #define TFS_CLS                     "tachyon/client/TachyonFS"
-#define TFS_GET_METHD               "get"
-#define TFS_GET_FILE_METHD          "getFile"
-#define TFS_GET_FILEID_METHD        "getFileId"
-#define TFS_CREATE_FILE_METHD       "createFile"
-#define TFS_MKDIR_METHD             "mkdir"
-#define TFS_MKDIRS_METHD            "mkdirs"
-#define TFS_DELETE_FILE_METHD       "delete"
-
 #define TFILE_CLS                   "tachyon/client/TachyonFile"
-#define TFILE_LENGTH_METHD          "length"
-#define TFILE_ISFILE_METHD          "isFile"
-#define TFILE_ISCOMPLETE_METHD      "isComplete"
-#define TFILE_ISDIRECTORY_METHD     "isDirectory"
-#define TFILE_ISINMEMORY_METHD      "isInMemory"
-#define TFILE_NEEDPIN_METHD         "needPin"
-#define TFILE_RECACHE_METHD         "recache"
-
-#define TFILE_PATH_METHD            "getPath"
-#define TFILE_RBB_METHD             "readByteBuffer"
-#define TFILE_GIS_METHD             "getInStream"
-#define TFILE_GOS_METHD             "getOutStream"
-
 #define TBBUF_CLS                   "tachyon/client/TachyonByteBuffer"
-#define TBBUF_CLOSE_METHD           "close"
-
 #define TREADT_CLS                  "tachyon/client/ReadType"
 #define TWRITET_CLS                 "tachyon/client/WriteType"
 
@@ -58,17 +38,6 @@
 
 // non-standard Tachyon API
 #define TKV_CLS                     "tachyon/client/TachyonKV"
-#define TKV_INIT_METHD              "init"
-#define TKV_GET_METHD               "read"
-#define TKV_SET_METHD               "write"
-#define TKV_RBUFF_METHD             "readBuffer"
-#define TKV_WBUFF_METHD             "writeBuffer"
-#define TKV_GRBUFF_METHD            "getReadBuffer"
-
-#define TURI_CLS                    "tachyon/TachyonURI"
-
-#define BBUF_CLS                    "java/nio/ByteBuffer"
-#define BBUF_ALLOC_METHD            "allocate"
 
 #define DEFAULT_KV_BLOCK_BYTES      8 * 1024 * 1024 // 8MB
 

@@ -24,7 +24,7 @@ jTachyonClient TachyonClient::createClient(const char *masterUri)
 
   jPathStr = env.newStringUTF(masterUri, "masterUri");
   // might throw exception, caller needs to handle it
-  env.callStaticMethod(&ret, TFS_CLS, TFS_GET_METHD, 
+  env.callStaticMethod(&ret, TFS_CLS, "get", 
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFS;", jPathStr);
   
   env->DeleteLocalRef(jPathStr); 
@@ -42,7 +42,7 @@ jTachyonFile TachyonClient::getFile(const char * path)
   jstring jPathStr;
   
   jPathStr = m_env.newStringUTF(path, "path");
-  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "getFile", 
                 "(Ljava/lang/String;)Ltachyon/client/TachyonFile;", jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   if (ret.l == NULL)
@@ -53,7 +53,7 @@ jTachyonFile TachyonClient::getFile(const char * path)
 jTachyonFile TachyonClient::getFile(int fid)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "getFile", 
                 "(I)Ltachyon/client/TachyonFile;", (jint) fid);
   if (ret.l == NULL)
     return NULL;
@@ -63,7 +63,7 @@ jTachyonFile TachyonClient::getFile(int fid)
 jTachyonFile TachyonClient::getFile(int fid, bool useCachedMetadata)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_GET_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "getFile", 
                 "(IZ)Ltachyon/client/TachyonFile;",
                 (jint) fid, (jboolean) useCachedMetadata);
   if (ret.l == NULL)
@@ -77,7 +77,7 @@ int TachyonClient::getFileId(const char *path)
   jTachyonURI uri = TachyonURI::newURI(path);
   if (uri == NULL)
     return -1;
-  m_env.callMethod(&ret, m_obj, TFS_GET_FILEID_METHD, 
+  m_env.callMethod(&ret, m_obj, "getFileId", 
                     "(Ltachyon/TachyonURI;)I", uri->getJObj());
   delete uri;
   return ret.i;
@@ -90,7 +90,7 @@ int TachyonClient::createFile(const char * path)
   
   jPathStr = m_env.newStringUTF(path, "path");
 
-  m_env.callMethod(&ret, m_obj, TFS_CREATE_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "createFile", 
                     "(Ljava/lang/String;)I", jPathStr);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.i;
@@ -103,7 +103,7 @@ bool TachyonClient::mkdir(const char *path)
   if (uri == NULL)
     return false;
   
-  m_env.callMethod(&ret, m_obj, TFS_MKDIR_METHD, 
+  m_env.callMethod(&ret, m_obj, "mkdir", 
                 "(Ltachyon/TachyonURI;)Z", uri->getJObj());
   delete uri;
   return ret.z;
@@ -116,7 +116,7 @@ bool TachyonClient::mkdirs(const char *path, bool recursive)
   if (uri == NULL)
     return false;
   
-  m_env.callMethod(&ret, m_obj, TFS_MKDIRS_METHD, 
+  m_env.callMethod(&ret, m_obj, "mkdirs", 
                 "(Ltachyon/TachyonURI;Z)Z", uri->getJObj(), (jboolean) recursive);
   delete uri;
   return ret.z;
@@ -128,7 +128,7 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
   jstring jPathStr;
   
   jPathStr = m_env.newStringUTF(path, "path");
-  m_env.callMethod(&ret, m_obj, TFS_DELETE_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "delete", 
                     "(Ljava/lang/String;Z)Z", jPathStr, (jboolean) recursive);
   m_env->DeleteLocalRef(jPathStr); 
   return ret.z;
@@ -137,7 +137,7 @@ bool TachyonClient::deletePath(const char *path, bool recursive)
 bool TachyonClient::deletePath(int fid, bool recursive)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFS_DELETE_FILE_METHD, 
+  m_env.callMethod(&ret, m_obj, "delete", 
                     "(IZ)Z", (jint) fid, (jboolean) recursive);
   return ret.z;
 }
@@ -145,49 +145,49 @@ bool TachyonClient::deletePath(int fid, bool recursive)
 long TachyonFile::length()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_LENGTH_METHD, "()J");
+  m_env.callMethod(&ret, m_obj, "length", "()J");
   return ret.j;
 }
 
 bool TachyonFile::isFile()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_ISFILE_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "isFile", "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isComplete()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_ISCOMPLETE_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "isComplete", "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isDirectory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_ISDIRECTORY_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "isDirectory", "()Z");
   return ret.z;
 }
 
 bool TachyonFile::isInMemory()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_ISINMEMORY_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "isInMemory", "()Z");
   return ret.z;
 }
 
 bool TachyonFile::needPin()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_NEEDPIN_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "needPin", "()Z");
   return ret.z;
 }
 
 bool TachyonFile::recache()
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_RECACHE_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "recache", "()Z");
   return ret.z;
 }
 
@@ -198,7 +198,7 @@ char * TachyonFile::getPath()
   const char *path;
   char *retPath;
 
-  m_env.callMethod(&ret, m_obj, TFILE_PATH_METHD, "()Ljava/lang/String;");
+  m_env.callMethod(&ret, m_obj, "getPath", "()Ljava/lang/String;");
   if (ret.l == NULL)
     return NULL;
   jpath = (jstring) ret.l;
@@ -211,7 +211,7 @@ char * TachyonFile::getPath()
 jTachyonByteBuffer TachyonFile::readByteBuffer(int blockIndex)
 {
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TFILE_RBB_METHD, 
+  m_env.callMethod(&ret, m_obj, "readByteBuffer", 
                 "(I)Ltachyon/client/TachyonByteBuffer;", (jint) blockIndex);
   if (ret.l == NULL)
     return NULL;
@@ -224,7 +224,7 @@ jInStream TachyonFile::getInStream(ReadType readType)
   jobject eobj;
 
   eobj = enumObjReadType(m_env, readType);
-  m_env.callMethod(&ret, m_obj, TFILE_GIS_METHD, 
+  m_env.callMethod(&ret, m_obj, "getInStream", 
                 "(Ltachyon/client/ReadType;)Ltachyon/client/InStream;", eobj);
   if (ret.l == NULL)
     return NULL;
@@ -237,7 +237,7 @@ jOutStream TachyonFile::getOutStream(WriteType writeType)
   jobject eobj;
 
   eobj = enumObjWriteType(m_env, writeType);
-  m_env.callMethod(&ret, m_obj, TFILE_GOS_METHD, 
+  m_env.callMethod(&ret, m_obj, "getOutStream", 
                 "(Ltachyon/client/WriteType;)Ltachyon/client/OutStream;", eobj);
   if (ret.l == NULL)
     return NULL;
@@ -253,14 +253,14 @@ jByteBuffer TachyonByteBuffer::getData()
 
 void TachyonByteBuffer::close()
 {
-  m_env.callMethod(NULL, m_obj, TBBUF_CLOSE_METHD, "()V");
+  m_env.callMethod(NULL, m_obj, "close", "()V");
 }
 
 jByteBuffer ByteBuffer::allocate(int capacity)
 {
   Env env;
   jvalue ret;
-  env.callStaticMethod(&ret, BBUF_CLS, BBUF_ALLOC_METHD, 
+  env.callStaticMethod(&ret, BBUF_CLS, "allocate", 
                 "(I)Ljava/nio/ByteBuffer;", (jint) capacity);
   if (ret.l == NULL)
     return NULL;
@@ -440,7 +440,7 @@ bool TachyonKV::init()
 {
   jthrowable exception;
   jvalue ret;
-  m_env.callMethod(&ret, m_obj, TKV_INIT_METHD, "()Z");
+  m_env.callMethod(&ret, m_obj, "init", "()Z");
   return ret.i;
 }
 
@@ -450,13 +450,13 @@ int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuel
   jobject jDbuff;
   jvalue ret;
 
-  m_env.callMethod(&ret, m_obj, TKV_GRBUFF_METHD,
+  m_env.callMethod(&ret, m_obj, "getReadBuffer",
           "()Ljava/nio/ByteBuffer;");
   jDbuff = ret.l;
 
   std::string skey(key, keylen);
   jstring jKeyStr = m_env.newStringUTF(skey.c_str(), "key");
-  m_env.callMethod(&ret, m_obj, TKV_RBUFF_METHD,
+  m_env.callMethod(&ret, m_obj, "readBuffer",
           "(Ljava/lang/String;Ljava/nio/ByteBuffer;)I", jKeyStr, jDbuff);
   m_env->DeleteLocalRef(jKeyStr);
   char *cDbuff = (char *) m_env->GetDirectBufferAddress(jDbuff);
@@ -466,39 +466,6 @@ int TachyonKV::get(const char *key, uint32_t keylen, char *buff, uint32_t valuel
   }
   rdSz = ret.i;
   strncpy(buff, cDbuff, valuelen);
-
-  /*
-  jthrowable exception;
-  jbyteArray jBuf;
-  jvalue ret;
-
-  std::string skey(key, keylen);
-  jstring jKeyStr = m_env->NewStringUTF(skey.c_str());
-  if (jKeyStr == NULL) {
-    serror("fail to allocate key string");
-    return NULL;
-  }
-
-  jBuf = m_env->NewByteArray(valuelen);
-  if (jBuf == NULL) {
-    serror("fail to allocate jByteArray for TachyonKV.get");
-    return -1;
-  }
-  exception = callMethod(m_env, &ret, m_obj, TKV_CLS, TKV_GET_METHD,
-          "(Ljava/lang/String;[B)I", false, jKeyStr, jBuf);
-  m_env->DeleteLocalRef(jKeyStr);
-  if (exception != NULL) {
-    m_env->DeleteLocalRef(jBuf);
-    // serror("fail to call TachyonKV.get()");
-    printException(m_env, exception);
-    return -1;
-  }
-  rdSz = ret.i;
-  if (rdSz > 0) {
-    m_env->GetByteArrayRegion(jBuf, 0, valuelen, (jbyte*) buff);
-  }
-  m_env->DeleteLocalRef(jBuf);
-  */
   return rdSz;
 }
 
@@ -514,37 +481,9 @@ void TachyonKV::set(const char *key, uint32_t keylen, const char *buff, uint32_t
 
   std::string skey(key, keylen);
   jstring jKeyStr = m_env.newStringUTF(skey.c_str(), "key");
-  m_env.callMethod(NULL, m_obj, TKV_WBUFF_METHD,
+  m_env.callMethod(NULL, m_obj, "writeBuffer",
           "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V", jKeyStr, jDbuff);
   m_env->DeleteLocalRef(jKeyStr);
-
-  /*
-  jthrowable exception;
-  jbyteArray jBuf;
-
-  std::string skey(key, keylen);
-  jstring jKeyStr = m_env->NewStringUTF(skey.c_str());
-  if (jKeyStr == NULL) {
-    serror("fail to allocate key string");
-    return;
-  }
-
-  jBuf = m_env->NewByteArray(valuelen);
-  if (jBuf == NULL) {
-    serror("fail to allocate jByteArray for TachyonKV.set");
-    return;
-  }
-  m_env->SetByteArrayRegion(jBuf, 0, valuelen, (jbyte*) buff);
-
-  exception = callMethod(m_env, NULL, m_obj, TKV_CLS, TKV_SET_METHD,
-          "(Ljava/lang/String;[B)V", false, jKeyStr, jBuf);
-  m_env->DeleteLocalRef(jKeyStr);
-  if (exception != NULL) {
-    m_env->DeleteLocalRef(jBuf);
-    // serror("fail to call TachyonKV.set()");
-    printException(m_env, exception);
-  }
-  */
 }
 
 jobject enumObjReadType(Env& env, ReadType readType)

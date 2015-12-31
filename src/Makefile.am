@@ -6,7 +6,7 @@ libtachyon_la_LIBADD = $(JNI_LDFLAGS)
 include_libtachyondir = $(includedir)
 include_libtachyon_HEADERS = Tachyon.h JNIHelper.h
 
-check_PROGRAMS = tachyontest
+bin_PROGRAMS = tachyontest
 
 tachyontest_SOURCES = TachyonTest.cc Util.cc Tachyon.h
 tachyontest_CPPFLAGS = $(JNI_INCLUDES)

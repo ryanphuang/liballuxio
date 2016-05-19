@@ -3,6 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libtachyon], [0.1.0], [ryanhuang@cs.ucsd.edu])
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_HOST
 AC_CANONICAL_BUILD

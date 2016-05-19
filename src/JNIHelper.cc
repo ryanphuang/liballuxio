@@ -15,8 +15,9 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <iostream>
 
-using namespace tachyon::jni;
+using namespace alluxio::jni;
 
 std::map<JNIEnv *, ClassCache *> ClassCache::s_caches;
 
@@ -435,7 +436,7 @@ jobject Env::newObjectV(jclass cls, const char *className, const char *ctorSigna
   }
 }
 
-jobject Env::getEnumObject(const char *className, const char *valueName)
+jobject Env::getEnumObject(const char *className, const char *valueName, const char *objType)
 {
   jclass cls;
   jfieldID jid;
@@ -443,10 +444,7 @@ jobject Env::getEnumObject(const char *className, const char *valueName)
 
   try {
     cls = findClassAndCache(className);
-    std::string clsSignature = className;
-    clsSignature.insert(0, 1, 'L');
-    clsSignature.push_back(';');
-    jid = m_env->GetStaticFieldID(cls, valueName, clsSignature.c_str());
+    jid = m_env->GetStaticFieldID(cls, valueName, objType);
     obj = m_env->GetStaticObjectField(cls, jid);
     checkExceptionAndClear();
   } catch (const NativeException& exce) {

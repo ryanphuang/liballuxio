@@ -41,6 +41,9 @@
 
 #define DEFAULT_KV_BLOCK_BYTES      8 * 1024 * 1024 // 8MB
 
+using namespace alluxio;
+using namespace alluxio::jni;
+
 namespace tachyon {
 
 enum ReadType {
@@ -261,8 +264,8 @@ class TachyonKV : public JNIObjBase {
 extern "C" {
 #endif
 
-jobject enumObjReadType(tachyon::jni::Env& env, tachyon::ReadType readType);
-jobject enumObjWriteType(tachyon::jni::Env& env, tachyon::WriteType writeType);
+jobject enumObjReadType(Env& env, tachyon::ReadType readType);
+jobject enumObjWriteType(Env& env, tachyon::WriteType writeType);
 
 char* fullTachyonPath(const char *masterUri, const char *filePath);
 

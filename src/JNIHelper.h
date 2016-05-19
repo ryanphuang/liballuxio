@@ -45,7 +45,7 @@
 #define J_OBJ    'L'
 #define J_ARRAY  '['
 
-namespace tachyon { namespace jni {
+namespace alluxio { namespace jni {
 
 /**
  * simple pthread_mutex wrapper
@@ -256,7 +256,7 @@ public:
   jobject newObject(jclass cls, const char *className, const char *ctorSignature, ...);
 
   // get the jobject for a enum value
-  jobject getEnumObject(const char *className, const char * valueName);
+  jobject getEnumObject(const char *className, const char * valueName, const char * objType);
 
   // create a runtime exception
   jthrowable newRuntimeException(const char *message);

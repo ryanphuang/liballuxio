@@ -1,8 +1,8 @@
-# libtachyon
-C/C++ API for Tachyon
+# liballuxio
+C/C++ API for Alluxio (formerly Tachyon)
 
 # Requirement:
-  * JDK 1.6+
+  * JDK 1.7+
   * Autoconf, Automake, and Libtool (for maintainer)
 
 # Usage:
@@ -13,10 +13,10 @@ If you are a maintainer, you need to first invoke the `boostrap` script to gener
 Then invoke `configure` following the GNU conventions, which does some basic testing,
 tries to setup the JNI CFLAGS and LDFLAGS automatically, and then generate a `Makefile`.
 
-It is recommended that you build the project in a separate directory. For example, 
+It is recommended that you build the project in a separate directory. For example,
 
 ```
-cd libtachon
+cd liballuxio
 ./boostrap  # if you are a maintainer
 mkdir build
 mkdir bin
@@ -26,22 +26,20 @@ make
 make install
 ```
 
-Under `bin/lib` you should see both a static library `libtachyon.a` and a dynamic
-library `libtachyon.so` generated. The header file is in `bin/include`.
+Under `bin/lib` you should see both a static library `liballuxio.a` and a dynamic
+library `liballuxio.so` generated. The header file is in `bin/include`.
 
-In your Tachyon client C/C++ code, include the `Tachyon.h` header to use the available
-APIs. Then link the libtachyon library to your object files to compile an executable.
+In your Alluxio client C/C++ code, include the `Alluxio.h` header to use the available
+APIs. Then link the liballuxio library to your object files to compile an executable.
 
 To run the client executable, you need to first make sure the `libjvm.so` is in the
 `LD_LIBRARY_PATH`: e.g., `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
-Then make sure the Tachyon Java client jar is in the `CLASSPATH`: e.g., 
-`export CLASSPATH=$CLASSPATH:$HOME/tachyon/lib/tachyon-client-0.6.4-jar-with-dependencies.jar`.
+Then make sure the Alluxio Java client jar is in the `CLASSPATH`: e.g.,
 
-`tachyontest` is a sample client executable that test the implemented C/C++ Tachyon APIs.
+`export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar`.
 
-For an actual usage example of the C++ client, refer to the 
-[load generator](https://github.com/stormspirit/imembench/blob/master/loadgenerator/tachyondriver.cc) we 
+`alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
+
+For an actual usage example of the C++ client, refer to the
+[load generator](https://github.com/stormspirit/imembench/blob/master/loadgenerator/tachyondriver.cc) we
 implemented in the [imembench](https://github.com/stormspirit/imembench) project based on this client.
-
-
-

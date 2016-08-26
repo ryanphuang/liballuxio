@@ -14,7 +14,8 @@
 #include <stdlib.h>
 
 using namespace tachyon;
-using namespace tachyon::jni;
+using namespace alluxio;
+using namespace alluxio::jni;
 
 jTachyonClient TachyonClient::createClient(const char *masterUri)
 {
@@ -502,7 +503,7 @@ jobject enumObjReadType(Env& env, ReadType readType)
     default:
           throw std::runtime_error("invalid readType");
   }
-  return env.getEnumObject(TREADT_CLS, valueName);
+  return env.getEnumObject(TREADT_CLS, valueName, "Ljava/lang/String;");
 }
 
 jobject enumObjWriteType(Env& env, WriteType writeType)
@@ -527,7 +528,7 @@ jobject enumObjWriteType(Env& env, WriteType writeType)
     default:
           throw std::runtime_error("invalid writeType");
   }
-  return env.getEnumObject(TWRITET_CLS, valueName);
+  return env.getEnumObject(TWRITET_CLS, valueName, "Ljava/lang/String;");
 }
 
 char* fullTachyonPath(const char *masterUri, const char *filePath)

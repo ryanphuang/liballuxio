@@ -4,6 +4,7 @@ C/C++ API for Alluxio (formerly Tachyon)
 # Requirement:
   * JDK 1.7+
   * Autoconf, Automake, and Libtool (for maintainer)
+    - On Ubuntu, `sudo apt-get install autoconf automake libtool`.
 
 # Usage:
 

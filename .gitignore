@@ -14,6 +14,9 @@ bin/
 tachyontest
 libtachyon.so
 libtachyon.a
+alluxiotest
+liballuxio.so
+liballuxio.a
 
 # Autotool stuff
 Makefile
@@ -25,6 +28,7 @@ config.guess
 config.sub
 configure
 depcomp
+libtool
 install-sh
 libtool.m4
 ltmain.sh

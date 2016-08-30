@@ -26,6 +26,9 @@ autom4te.cache
 compile
 config.guess
 config.sub
+config.log
+config.lt
+config.status
 configure
 depcomp
 libtool

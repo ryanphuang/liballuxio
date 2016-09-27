@@ -35,12 +35,13 @@ APIs. Then link the liballuxio library to your object files to compile an execut
 
 To run the client executable, you need to first make sure the `libjvm.so` is in the
 `LD_LIBRARY_PATH`: e.g., `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
-Then make sure the Alluxio Java client jar is in the `CLASSPATH`: e.g.,
 
-`export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar`.
+Then either make sure the Alluxio Java client jar is in the `CLASSPATH`: e.g.,
+
+`export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar`
+
+or modify the CLASSPATH constants at the top of src/JNIHelper.h.
 
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
 
-For an actual usage example of the C++ client, refer to the
-[load generator](https://github.com/stormspirit/imembench/blob/master/loadgenerator/tachyondriver.cc) we
-implemented in the [imembench](https://github.com/stormspirit/imembench) project based on this client.
+The library currently supports Alluxio 1.2.0.

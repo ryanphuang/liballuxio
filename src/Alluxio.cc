@@ -18,45 +18,105 @@
 using namespace alluxio;
 using namespace alluxio::jni;
 
-AlluxioClientContext::AlluxioClientContext(const char *host, const char *port)
-{
-    Env env;
-    jvalue  retClientContext;
-    jvalue  retConfiguration;
-    jvalue  retSet;
-    jstring jHostString;
-    jstring jPortString;
-    jobject jHostKeyString;
-    jobject jPortKeyString;
+/**
+   Constructor for AlluxioClientContext
 
-    // First get the ClientContext.Configuration
-    env.callStaticMethod(&retConfiguration, 
-            "alluxio/client/ClientContext", "getConf", "()Lalluxio/Configuration;");
+   This will attach to the JVM thread created for this process.  Prior to
+   calling this AlluxioClientContext::connect() must be called to cause the JVM
+   thread to connect to the master node.
+*/
+AlluxioClientContext::AlluxioClientContext()
+    : m_mustDetachInDtor(false), m_mustDeleteLocalRef(false) {
+  attach();
+}
 
-    // Get the hostname and port strings from the alluxio.Constants class
-    jHostKeyString = env.getEnumObject(
-          "alluxio/Constants", "MASTER_HOSTNAME", "Ljava/lang/String;");
-    jPortKeyString = env.getEnumObject(
-          "alluxio/Constants", "MASTER_RPC_PORT", "Ljava/lang/String;"); 
+/**
+   Destructor.
+*/
+AlluxioClientContext::~AlluxioClientContext() {
+    if (m_mustDeleteLocalRef) {
+        m_env.deleteLocalRef(m_baseFileSystem);
+        m_mustDeleteLocalRef = false;
+    }
+    if (m_mustDetachInDtor) {
+        m_env.DetachCurrentThread();
+        m_mustDetachInDtor = false;
+    }
+}
 
-    jHostString = env.newStringUTF(host, "host");
-    jPortString = env.newStringUTF(port, "port");
+/**
+  Set a string value in the Alluxio constants
 
-    // Call the methods to set the hostname and port
-    env.callMethod(&retSet, retConfiguration.l, "set",
-            "(Ljava/lang/String;Ljava/lang/String;)V", jHostKeyString, jHostString);
-    env.callMethod(&retSet, retConfiguration.l, "set",
-            "(Ljava/lang/String;Ljava/lang/String;)V", jPortKeyString, jPortString);
+  @param[in] env The jni environment
+  @param[in] key Key of string constant to be set
+  @param[in] value Value to be assigned
+*/
+void AlluxioClientContext::setAlluxioStringConstant(jni::Env &env, const char *key, const char *value) {
+  jvalue  retSet;
 
-    // Init the client context
-    env.callStaticMethod(&retClientContext, 
-          "alluxio/client/ClientContext", "init", "()V");
+  // Get the key object
+  JNIObjBase jKeyObject(env, env.getEnumObject("alluxio/Constants", key, "Ljava/lang/String;"));
 
-    // Cleanup jvalues
-    env->DeleteLocalRef(jHostString);
-    env->DeleteLocalRef(jHostKeyString);
-    env->DeleteLocalRef(jPortString);
-    env->DeleteLocalRef(jPortKeyString);
+  // Construct the string
+  JNIStringBase jValueString(env, env.newStringUTF(value, value));
+
+  // Call the methods to set the string
+  env.callStaticMethod(&retSet, "alluxio/Configuration", "set",
+                      "(Ljava/lang/String;Ljava/lang/String;)V", 
+                      static_cast<jstring>(jKeyObject.getJObj()),
+                      jValueString.getJString());
+}
+
+/**
+  Connect to the Alluxio master node.
+
+  This only needs to be done once per process.  However, each thread that
+  interface with Alluxio needs to perform an attach first before it can use
+  JNI.
+
+  @param[in] host Host name of the Alluxio master node
+  @param[in] port Port name for the Alluxio master node
+*/
+void AlluxioClientContext::connect(const char *host, const char *port, 
+        const char *accessKey, const char *secretKey) {
+  Env env;
+  jvalue retClientContext;
+  jvalue retSet;
+
+  AlluxioClientContext::setAlluxioStringConstant(env, "MASTER_HOSTNAME", host);
+  AlluxioClientContext::setAlluxioStringConstant(env, "MASTER_RPC_PORT", port);
+
+  // Setup credentials for AWS S3A
+  AlluxioClientContext::setAlluxioStringConstant(env, "S3A_ACCESS_KEY", accessKey);
+  AlluxioClientContext::setAlluxioStringConstant(env, "S3A_SECRET_KEY", secretKey);
+
+  // Init the client context
+  env.callStaticMethod(&retClientContext, "alluxio/client/ClientContext",
+                       "init", "()V");
+}
+
+/**
+   Attach the current thread to a running JVM.
+
+   This can only be used if the process had previously called connect() in
+   same/other thread.
+*/
+void AlluxioClientContext::attach() {
+  // We only attach if not already done so.  This gives us nested style of
+  // semantics if we run a bunch of APIs that continually need to attach.  A
+  // detach is only done once we tear down the client context of when the
+  // thread first attached.
+  if (m_env.GetIsThreadDetached() == true) {
+    m_env.AttachCurrentThread();
+    m_mustDetachInDtor = true;
+  }
+
+  // Get a pointer to the alluxio java object for use in subsequent Java calls.
+  jvalue ret;
+  m_env.callStaticMethod(&ret, "alluxio/client/file/BaseFileSystem", "get",
+                         "()Lalluxio/client/file/BaseFileSystem;");
+  m_baseFileSystem = ret.l;
+  m_mustDeleteLocalRef = true;
 }
 
 jAlluxioCreateFileOptions AlluxioCreateFileOptions::getCreateFileOptions()
@@ -112,286 +172,6 @@ void AlluxioOpenFileOptions::setReadType(ReadType readType)
             "(Lalluxio/client/ReadType;)Lalluxio/client/file/options/OpenFileOptions;",
             jReadType);
 }
-
-jAlluxioFileSystem AlluxioFileSystem::getFileSystem(AlluxioClientContext *acc)
-{
-  Env env;
-  jvalue ret;
-
-  // might throw exception, caller needs to handle it
-  env.callStaticMethod(&ret, "alluxio/client/file/BaseFileSystem", "get", 
-                "()Lalluxio/client/file/BaseFileSystem;");
-  
-  return new AlluxioFileSystem(env, ret.l, acc);
-}
-
-jAlluxioFileSystem AlluxioFileSystem::copyClient(jAlluxioFileSystem client)
-{
-  return new AlluxioFileSystem(client->getEnv(), client->getJObj(), 
-          client->clientContext);
-}
-
-
-void AlluxioFileSystem::deletePath(const char * path)
-{
-  jvalue ret;
-
-  jAlluxioURI uri = AlluxioURI::newURI(path);
-
-  m_env.callMethod(&ret, m_obj, "delete", "(Lalluxio/AlluxioURI;)V",
-                   uri->getJObj());
-
-  delete uri;
-  return;
-}
-
-bool AlluxioFileSystem::exists(const char * path)
-{
-  jvalue ret;
-
-  jAlluxioURI uri = AlluxioURI::newURI(path);
-
-  m_env.callMethod(&ret, m_obj, "exists", "(Lalluxio/AlluxioURI;)Z",
-                   uri->getJObj());
-
-  delete uri;
-  return ret.z;
-}
-
-jFileOutStream AlluxioFileSystem::createFile(const char * path, 
-        AlluxioCreateFileOptions *options)
-{
-    jvalue ret;
-
-    jAlluxioURI uri = AlluxioURI::newURI(path);
-
-    jFileOutStream fileOutStream = NULL;
-
-    if (uri == NULL)
-    {
-       goto exit;
-    }
-
-    m_env.callMethod(&ret, m_obj, "createFile", 
-            "(Lalluxio/AlluxioURI;Lalluxio/client/file/options/CreateFileOptions;)Lalluxio/client/file/FileOutStream;",
-            uri->getJObj(), options->getOptions());
-
-    delete uri;
-
-    // FIXME: Change to shared_ptr
-    fileOutStream = new FileOutStream(m_env, ret.l); 
-
-exit:
-    return fileOutStream;
-}
-
-jFileOutStream AlluxioFileSystem::createFile(const char * path)
-{
-    jvalue ret;
-
-    jAlluxioURI uri = AlluxioURI::newURI(path);
-
-    jFileOutStream fileOutStream = NULL;
-
-    if (uri == NULL)
-    {
-       goto exit;
-    }
-
-    m_env.callMethod(&ret, m_obj, "createFile", 
-            "(Lalluxio/AlluxioURI;)Lalluxio/client/file/FileOutStream;",
-            uri->getJObj());
-
-    delete uri;
-
-    // FIXME: Change to shared_ptr
-    fileOutStream = new FileOutStream(m_env, ret.l); 
-
-exit:
-    return fileOutStream;
-}
-
-jFileInStream AlluxioFileSystem::openFile(const char * path)
-{
-    jvalue ret;
-
-    jAlluxioURI uri = AlluxioURI::newURI(path);
-
-    jFileInStream fileInStream = NULL;
-
-    if (uri == NULL)
-    {
-       goto exit;
-    }
-
-    m_env.callMethod(&ret, m_obj, "openFile", 
-            "(Lalluxio/AlluxioURI;)Lalluxio/client/file/FileInStream;",
-            uri->getJObj());
-
-    delete uri;
-    // FIXME: Change to shared_ptr?
-    fileInStream = new FileInStream(m_env, ret.l); 
-
-exit:
-    return fileInStream;
-}
-
-jFileInStream AlluxioFileSystem::openFile(const char * path, AlluxioOpenFileOptions *options)
-{
-    jvalue ret;
-
-    jAlluxioURI uri = AlluxioURI::newURI(path);
-
-    jFileInStream fileInStream = NULL;
-
-    if (uri == NULL)
-    {
-       goto exit;
-    }
-
-    m_env.callMethod(&ret, m_obj, "openFile", 
-            "(Lalluxio/AlluxioURI;Lalluxio/client/file/options/OpenFileOptions;)Lalluxio/client/file/FileInStream;",
-            uri->getJObj(), options->getOptions());
-
-    delete uri;
-
-    // FIXME: Change to shared_ptr?
-    fileInStream = new FileInStream(m_env, ret.l); 
-
-exit:
-    return fileInStream;
-}
-
-// FIXME: Rename so that deletePath and createDirectory have matching naming?
-void AlluxioFileSystem::createDirectory(const char *path)
-{
-   jvalue ret;
-   jAlluxioURI uri = AlluxioURI::newURI(path);
-
-   m_env.callMethod(&ret, m_obj, "createDirectory", 
-         "(Lalluxio/AlluxioURI;)V", uri->getJObj());
-   delete uri;
-
-exit:
-   return;
-}
-
-void AlluxioFileSystem::deletePath(const char * path, bool recursive)
-{
-  jvalue ret;
-
-  jAlluxioURI uri = AlluxioURI::newURI(path);
-
-  if (!recursive)
-  {
-     m_env.callMethod(&ret, m_obj, "delete", "(Lalluxio/AlluxioURI;)V",
-                      uri->getJObj());
-  }
-  else
-  {
-     jvalue deleteOptionsDefaults;
-     jvalue deleteOptionsSetRecursive;
-
-     m_env.callStaticMethod(&deleteOptionsDefaults, 
-           "alluxio/client/file/options/DeleteOptions", "defaults", 
-           "()Lalluxio/client/file/options/DeleteOptions;");
-
-     m_env.callMethod(&deleteOptionsSetRecursive, (jobject) deleteOptionsDefaults.l, 
-           "setRecursive", "(Z)Lalluxio/client/file/options/DeleteOptions;", 
-           (jboolean) recursive);
-
-     try
-     {
-        m_env.callMethod(&ret, m_obj, "delete", 
-              "(Lalluxio/AlluxioURI;Lalluxio/client/file/options/DeleteOptions;)V",
-              uri->getJObj(), (jobject) deleteOptionsSetRecursive.l);
-     }
-     catch (NativeException &e) 
-     {
-        std::string exceptionString;
-        jni::JavaThrowable *jthrow = e.detail();
-        jthrowable throwable = jthrow->getException();
-        m_env.throwableToString(throwable, exceptionString);
-        std::cout << "Caught exception: " << exceptionString << std::endl;
-        goto exit;
-     }
-  }
-
-exit:
-
-  delete uri;
-  return;
-}
-
-void AlluxioFileSystem::renameFile(const char *origPath, const char *newPath)
-{
-    jvalue ret;
-
-    jAlluxioURI origURI = AlluxioURI::newURI(origPath);
-    jAlluxioURI newURI = AlluxioURI::newURI(newPath);
-
-    m_env.callMethod(&ret, m_obj, "rename", 
-            "(Lalluxio/AlluxioURI;Lalluxio/AlluxioURI;)V", 
-            origURI->getJObj(), newURI->getJObj());
-
-    delete origURI;
-    delete newURI;
-}
-
-void AlluxioFileSystem::appendToFile(const char *path, void *buff, int length)
-{
-    const int bufferSize = 1000000;
-    const char* appendSuffix = ".append";
-    int bytesRead = bufferSize;
-    // FIXME: Change to std::vector
-    char* inputBuffer = (char *) calloc(bufferSize, 1);
-    int appendPathLength = strlen(path) + strlen(appendSuffix) + 1;
-
-    // FIXME: Change to std::vector
-    char* appendPath = (char *) malloc(appendPathLength);
-
-    strncpy(appendPath, path, appendPathLength);
-    strcat(appendPath,".append");
-
-    if (inputBuffer == NULL || appendPath == NULL)
-    {
-        throw std::bad_alloc();
-    }
-
-    jFileInStream origFile = openFile(path);
-
-    // FIXME: Create file should preserve file options of original file
-    jFileOutStream newFile = createFile(appendPath);
-
-    // Copy the original file over to the new file
-    while (bytesRead == bufferSize)
-    {
-        bytesRead = origFile->read(inputBuffer, bufferSize);
-
-        newFile->write(inputBuffer, bytesRead);
-    }
-
-    // Perform the append
-    newFile->write(buff, length);
-    origFile->close();
-    newFile->close();
-
-    // Delete original file
-    deletePath(path);
-
-    // NOTE: This is the critical section of this method.  If a failure
-    // occurs here, we will be left with a .append file and no original file.
-    
-    // TODO: we should add some defensive code in the open file path to
-    // perform this rename automatically if we only find a .append file
-    
-    // Rename file
-    renameFile(appendPath, path);
-
-    free(inputBuffer);
-    free(appendPath);
-}
-
 
 jByteBuffer ByteBuffer::allocate(int capacity)
 {
@@ -516,7 +296,6 @@ void InStream::close()
   m_env.callMethod(NULL, m_obj, "close", "()V");
 }
 
-//TODO: These methods are not yet tested yet.  Use with care
 void InStream::seek(long pos)
 {
   m_env.callMethod(NULL, m_obj, "seek", "(J)V", (jlong) pos);
@@ -525,7 +304,7 @@ void InStream::seek(long pos)
 long InStream::skip(long n)
 {
   jvalue ret;
-  m_env.callMethod(NULL, m_obj, "skip", "(J)J", (jlong) n);
+  m_env.callMethod(&ret, m_obj, "skip", "(J)J", (jlong) n);
   return ret.j;
 }
 
@@ -552,9 +331,9 @@ void OutStream::write(const void *buff, int length,
   jBuf = m_env.newByteArray(length);
   m_env->SetByteArrayRegion(jBuf, 0, length, (jbyte*) buff);
 
-  // FIXME: Change to std::vector
-  char *jbuff = (char *) malloc(length * sizeof(char));
-  m_env->GetByteArrayRegion(jBuf, 0, length, (jbyte*) jbuff);
+  std::unique_ptr<char[]> jbuff(new char[length * sizeof(char)]);
+  m_env->GetByteArrayRegion(jBuf, 0, length, (jbyte*) jbuff.get());
+  // printf("byte array in write: %s\n", jbuff);
 
   if (off < 0 || maxLen <= 0 || length == maxLen)
     m_env.callMethod(NULL, m_obj, "write", "([B)V", jBuf);
@@ -653,6 +432,300 @@ jobject enumObjWriteType(Env& env, WriteType writeType)
           throw std::runtime_error("invalid writeType");
   }
   return env.getEnumObject(TWRITET_CLS, valueName, "Lalluxio/client/WriteType;");
+}
+
+//////////////////////////////////////////
+// AlluxioFileSystem
+//////////////////////////////////////////
+
+/**
+  Constructor
+
+  @param[in] clientContext Context that has either connected to alluxio, or
+             attached to the running JVM that has connected.
+*/
+AlluxioFileSystem::AlluxioFileSystem(AlluxioClientContext &clientContext)
+    : mClient(clientContext) {}
+
+bool AlluxioFileSystem::exists(const char *path) {
+  jvalue ret;
+
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+
+  mClient.getEnv().callMethod(&ret, mClient.getJObj(), "exists",
+                              "(Lalluxio/AlluxioURI;)Z", uri->getJObj());
+
+  return ret.z;
+}
+
+void AlluxioFileSystem::createDirectory(const char *path) {
+  jvalue ret;
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+  mClient.getEnv().callMethod(&ret, mClient.getJObj(), "createDirectory",
+                              "(Lalluxio/AlluxioURI;)V", uri->getJObj());
+  return;
+}
+
+/**
+  Delete a file or directory in Alluxio
+
+  @param[in] path Path name to delete.  Can be a file or a directory.
+  @param[in] recursive If the path to be deleted is a directory, the flag
+             specifies whether the directory content should be recursively
+             deleted as well
+*/
+void AlluxioFileSystem::deletePath(const char *path, bool recursive) {
+  jvalue ret;
+
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+
+  if (!recursive) {
+    mClient.getEnv().callMethod(&ret, mClient.getJObj(), "delete",
+                                "(Lalluxio/AlluxioURI;)V", uri->getJObj());
+  } else {
+    jvalue deleteOptionsDefaults;
+    jvalue deleteOptionsSetRecursive;
+
+    mClient.getEnv().callStaticMethod(
+        &deleteOptionsDefaults, "alluxio/client/file/options/DeleteOptions",
+        "defaults", "()Lalluxio/client/file/options/DeleteOptions;");
+
+    mClient.getEnv().callMethod(
+        &deleteOptionsSetRecursive, (jobject)deleteOptionsDefaults.l,
+        "setRecursive", "(Z)Lalluxio/client/file/options/DeleteOptions;",
+        (jboolean)recursive);
+
+    mClient.getEnv().callMethod(
+        &ret, mClient.getJObj(), "delete",
+        "(Lalluxio/AlluxioURI;Lalluxio/client/file/options/DeleteOptions;)V",
+        uri->getJObj(), (jobject)deleteOptionsSetRecursive.l);
+  }
+}
+
+jFileInStream AlluxioFileSystem::openFile(const char *path,
+                                          AlluxioOpenFileOptions *options) {
+  jvalue ret;
+
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+
+  jFileInStream fileInStream = NULL;
+
+  if (options == NULL) {
+    mClient.getEnv().callMethod(
+        &ret, mClient.getJObj(), "openFile",
+        "(Lalluxio/AlluxioURI;)Lalluxio/client/file/FileInStream;",
+        uri->getJObj());
+  } else {
+    mClient.getEnv().callMethod(&ret, mClient.getJObj(), "openFile",
+                                "(Lalluxio/AlluxioURI;Lalluxio/client/file/"
+                                "options/OpenFileOptions;)Lalluxio/client/file/"
+                                "FileInStream;",
+                                uri->getJObj(), options->getOptions());
+  }
+
+  // FIXME: Change to shared_ptr?
+  return (new FileInStream(mClient.getEnv(), ret.l));
+}
+
+jFileOutStream
+AlluxioFileSystem::createFile(const char *path,
+                              AlluxioCreateFileOptions *options) {
+  jvalue ret;
+
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+
+  if (options == NULL) {
+    mClient.getEnv().callMethod(
+        &ret, mClient.getJObj(), "createFile",
+        "(Lalluxio/AlluxioURI;)Lalluxio/client/file/FileOutStream;",
+        uri->getJObj());
+  } else {
+    mClient.getEnv().callMethod(&ret, mClient.getJObj(), "createFile",
+                                "(Lalluxio/AlluxioURI;Lalluxio/client/file/"
+                                "options/CreateFileOptions;)Lalluxio/client/"
+                                "file/FileOutStream;",
+                                uri->getJObj(), options->getOptions());
+  }
+
+  return (new FileOutStream(mClient.getEnv(), ret.l));
+}
+
+void AlluxioFileSystem::renameFile(const char *origPath, const char *newPath) {
+  jvalue ret;
+
+  std::unique_ptr<AlluxioURI> origURI(AlluxioURI::newURI(origPath));
+  std::unique_ptr<AlluxioURI> newURI(AlluxioURI::newURI(newPath));
+
+  mClient.getEnv().callMethod(&ret, mClient.getJObj(), "rename",
+                              "(Lalluxio/AlluxioURI;Lalluxio/AlluxioURI;)V",
+                              origURI->getJObj(), newURI->getJObj());
+}
+
+// FIXME: We should be able to query the open file options and not require them
+// to be passed in
+jFileOutStream
+AlluxioFileSystem::openFileForAppend(const char *path,
+                                     AlluxioCreateFileOptions *options) {
+  const int bufferSize = 1000000;
+  const char *appendSuffix = ".append";
+  int bytesRead = bufferSize;
+  jFileInStream origFile = NULL;
+  jFileOutStream newFile = NULL;
+  // FIXME: Change to std::vector
+  char *inputBuffer = (char *)calloc(bufferSize, 1);
+
+  if (inputBuffer == NULL) {
+    throw std::bad_alloc();
+  }
+
+  int appendPathLength = strlen(path) + strlen(appendSuffix) + 1;
+
+  // FIXME: Change to std::vector
+  char *appendPath = (char *)malloc(appendPathLength);
+
+  if (appendPath == NULL) {
+    throw std::bad_alloc();
+  }
+
+  strncpy(appendPath, path, appendPathLength);
+  strcat(appendPath, ".append");
+
+  try {
+    origFile = openFile(path, nullptr);
+    newFile = createFile(appendPath, options);
+
+    // Copy the original file over to the new file
+    while (bytesRead == bufferSize) {
+      bytesRead = origFile->read(inputBuffer, bufferSize);
+      if (bytesRead > 0) {
+          newFile->write(inputBuffer, bytesRead);
+      }
+    }
+
+    origFile->close();
+  }
+  catch (...) {
+    free(inputBuffer);
+    free(appendPath);
+    throw;
+  }
+
+  free(inputBuffer);
+  free(appendPath);
+
+  return newFile;
+}
+
+void AlluxioFileSystem::completeAppend(const char *path,
+                                       jFileOutStream fileOutStream) {
+  const char *appendSuffix = ".append";
+  int appendPathLength = strlen(path) + strlen(appendSuffix) + 1;
+  char *appendPath = (char *)malloc(appendPathLength);
+
+  if (appendPath == NULL) {
+    throw std::bad_alloc();
+  }
+
+  strncpy(appendPath, path, appendPathLength);
+  strcat(appendPath, ".append");
+
+  try {
+    fileOutStream->close();
+
+    // Delete original file
+    deletePath(path);
+
+    // NOTE: This is the critical section of this method.  If a failure
+    // occurs here, we will be left with a .append file and no original file.
+
+    // TODO: we should add some defensive code in the open file path to
+    // perform this rename automatically if we only find a .append file
+
+    // Rename file
+    renameFile(appendPath, path);
+  }
+  catch (...) {
+    free(appendPath);
+    throw;
+  }
+
+  free(appendPath);
+}
+
+long int AlluxioFileSystem::fileSize(const char *path) {
+  jvalue retGetStatus;
+  jvalue retGetSize;
+
+  // FIXME: where are we cleaning up ret* memory?  Is there a huge memory leak
+  // going on here?  Also, this whole file doesn't appear to be exception safe.
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+
+  mClient.getEnv().callMethod(
+      &retGetStatus, mClient.getJObj(), "getStatus",
+      "(Lalluxio/AlluxioURI;)Lalluxio/client/file/URIStatus;", uri->getJObj());
+
+  mClient.getEnv().callMethod(&retGetSize, retGetStatus.l, "getLength", "()J");
+
+  return retGetSize.j;
+}
+
+/**
+   Return a list of files in the given path.
+
+   @param[in] path Path to list files/dirs from
+   @param[in] filter Type of filter to apply to list call
+   @return Vector of strings.  Each entry is a file in the path.
+*/
+std::vector<std::string> AlluxioFileSystem::listPath(const char *path,
+                                                     ListPathFilter filter) {
+  std::vector<std::string> files;
+
+  jvalue retList;
+  std::unique_ptr<AlluxioURI> uri(AlluxioURI::newURI(path));
+  mClient.getEnv().callMethod(&retList, mClient.getJObj(), "listStatus",
+                              "(Lalluxio/AlluxioURI;)Ljava/util/List;", uri->getJObj());
+
+  // List<URIStatus>.size()
+  jvalue retGetSize;
+  mClient.getEnv().callMethod(&retGetSize, retList.l, "size", "()I");
+
+  files.reserve(retGetSize.i);
+  for(int i = 0; i < retGetSize.i; i++) {
+    jvalue uriObj;
+    mClient.getEnv().callMethod(&uriObj, retList.l, "get",
+                                "(I)Ljava/lang/Object;", (jint)i);
+
+    jvalue uriString;
+    mClient.getEnv().callMethod(&uriString, uriObj.l, "toString",
+            "()Ljava/lang/String;", uriObj.l);
+    std::string rawObjStr;
+    mClient.getEnv().jstringToString(static_cast<jstring>(uriString.l), rawObjStr);
+
+    // Parse out just the file name from the raw string
+    const static std::string PATH_MARKER_START = "path=";
+    const static std::string PATH_MARKER_END = ", ";
+    std::string pathStr = rawObjStr.substr(rawObjStr.find(PATH_MARKER_START) + PATH_MARKER_START.size());
+    pathStr = pathStr.substr(0, pathStr.find(PATH_MARKER_END));
+
+    switch (filter) {
+    case ListPathFilter::NONE:
+      files.push_back(pathStr);
+      break;
+
+    case ListPathFilter::DIRECTORIES_ONLY:
+      if (rawObjStr.find("folder=true") != std::string::npos) {
+        files.push_back(pathStr);
+      }
+      break;
+
+    default:
+      std::ostringstream errMsg;
+      errMsg << "Unknown listPath() filter " << int(filter);
+      throw std::runtime_error(errMsg.str());
+    }
+  }
+
+  return files;
 }
 
 

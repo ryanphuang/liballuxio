@@ -18,6 +18,7 @@ AC_CONFIG_FILES([Makefile
 LT_PREREQ([2.2])
 LT_INIT
 LT_LANG([C++])
+AX_CXX_COMPILE_STDCXX([11],,[mandatory])
 LT_OUTPUT
 
 # Checks for programs.

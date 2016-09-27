@@ -9,7 +9,6 @@
 #include "Alluxio.h"
 #include "Util.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 //FIXME: This is using a mix of C and C++ IO right now.  Convert to all
@@ -20,6 +19,8 @@
 #include <iomanip>
 #include <chrono>
 #include <functional>
+#include <thread>
+#include "JNIHelper.h"
 
 using namespace alluxio;
 
@@ -33,13 +34,17 @@ const char *gDirToCreate = "/alluxiotest";
 const char *gPathSeparatorString = "/";
 const char gPathSeparatorChar = '/';
 
+// FIXME: Change to allow keys to be entered via a config file
+const char *awsAccessKey = "-----ACCESS-KEY-----";
+const char *awsSecretKey = "------------SECRET-KEY------------------";
+
 void usage()
 {
    std::cerr << "Usage: " << program_name << " masterHost masterPort [file]" 
       << std::endl;
 }
 
-char* inputFileToAlluxioPath (char* file)
+std::string inputFileToAlluxioPath (char* file)
 {
     const char *fileName;
     // Find the file name in the supplied path by looking for the last separator
@@ -55,32 +60,100 @@ char* inputFileToAlluxioPath (char* file)
         fileName++;
     }
 
-    // FIXME: Change to std::vector
-    char * alluxioPath = (char *) calloc(strlen(fileName) + 
-            strlen(gPathSeparatorString) + strlen(gDirToCreate) + 1, 1);
+    std::string alluxioPath(gDirToCreate);
 
-    if (!alluxioPath)
-    {
-        throw std::bad_alloc();
-    }
-
-    strncpy(alluxioPath, gDirToCreate, strlen(gDirToCreate));
-    strncpy(&alluxioPath[strlen(gDirToCreate)], gPathSeparatorString, 
-            strlen(gPathSeparatorString));
-    strncpy(&alluxioPath[strlen(gDirToCreate) + strlen(gPathSeparatorString)], 
-            fileName, strlen(fileName));
+    alluxioPath.append(gPathSeparatorString);
+    alluxioPath.append(fileName);
 
     return alluxioPath;
 }
 
 void testCreateDirectory(jAlluxioFileSystem client, const char *path)
 {
+  std::cout << std::endl << "TEST - CREATE DIRECTORY: ";
   client->createDirectory(path);
-  std::cout << "created alluxio dir " << path << std::endl;
+  std::cout << "SUCCESS - Created alluxio dir " << path << std::endl;
+}
+
+void testDirectoryExists(jAlluxioFileSystem client, const char *path)
+{
+  std::cout << std::endl << "TEST - DIRECTORY EXISTS: ";
+  client->exists(path);
+  std::cout << "SUCCESS - Alluxio dir " << path << " exists" << std::endl;
+}
+
+void testGetFileSize(jAlluxioFileSystem client, const char *path)
+{
+  std::cout << std::endl << "TEST - GET FILE SIZE: ";
+  long int size = client->fileSize(path);
+  std::cout << "SUCCESS - File " << path << " has size " << size << " bytes" << std::endl;
+}
+
+void testSeek(jAlluxioFileSystem client, const char *path)
+{
+  std::cout << std::endl << "TEST - FILE SEEK: ";
+  const long int bufSize = 10;
+  const long int seekPos = 5;
+  char buf[bufSize];
+  jFileInStream fileInStream = client->openFile(path);
+
+  try
+  {
+      fileInStream->seek(seekPos);
+      int rdSz = fileInStream->read(buf, bufSize-1);
+      buf[rdSz] = '\0';
+      std::cout << "SUCCESS - Content of " << path << std::endl << "starting at position " << seekPos 
+          << " is: \"" << buf << "\"" << std::endl;
+  }
+  catch (...)
+  {
+      fileInStream->close();
+      throw;
+  }
+
+  fileInStream->close();
+}
+
+void testSkip(jAlluxioFileSystem client, const char *path)
+{
+  std::cout << std::endl << "TEST - FILE SKIP: ";
+  const long int bufSize = 5;
+  const long int skipBytes = 5;
+  char buf[bufSize];
+  jFileInStream fileInStream = client->openFile(path);
+
+  try
+  {
+      // Read from the beginning of the file, then skip and read some more
+      int rdSz = fileInStream->read(buf, bufSize-1);
+      buf[rdSz] = '\0';
+      std::cout << std::endl << "Reading " << bufSize << " bytes from the beginning of " << path  
+          << ":" << std::endl << "\"" << buf << "\"" << std::endl;
+      long int bytesSkipped = fileInStream->skip(skipBytes);
+      if (bytesSkipped != skipBytes)
+      {
+          std::cout << "FAILURE - Failed to skip " << skipBytes << " bytes. rc from skip: " << bytesSkipped<< std::endl;
+      }
+      else
+      {
+          rdSz = fileInStream->read(buf, bufSize-1);
+          buf[rdSz] = '\0';
+          std::cout << "Skipping " << skipBytes << " bytes " << std::endl;
+          std::cout << "Post skip, buffer contains: \"" << buf << "\"" << std::endl;
+      }
+  }
+  catch (...)
+  {
+      fileInStream->close();
+      throw;
+  }
+
+  fileInStream->close();
 }
 
 jFileOutStream testCreateFileWithOptions(jAlluxioFileSystem client, const char *path)
 {
+  std::cout << std::endl << "TEST - CREATE FILE WITH OPTIONS: ";
   jFileOutStream fileOutStream;
   bool fileExists = false;
   AlluxioCreateFileOptions* options = AlluxioCreateFileOptions::getCreateFileOptions();
@@ -89,13 +162,33 @@ jFileOutStream testCreateFileWithOptions(jAlluxioFileSystem client, const char *
 
   fileOutStream = client->createFile(path, options);
 
-  printf("created alluxio file:%s\n", path);
+  std::cout << "SUCCESS - Created alluxio file: " << path << std::endl;
 
   return fileOutStream;
 }
 
+void testLsCommand(jAlluxioFileSystem client, const std::string &expectedPath,
+                   ListPathFilter filter) {
+  std::cout << std::endl << "TEST - LS COMMAND: ";
+
+  std::vector<std::string> files = client->listPath("/", filter);
+  bool foundPath = false;
+  for(const std::string& i : files) {
+      foundPath |= (i.compare(expectedPath) == 0);
+  }
+
+  if (foundPath) {
+      std::cout << "SUCCESS - ls command found the path " << expectedPath << std::endl;
+  }
+  else
+  {
+      std::cout << "ERROR - did not find " << expectedPath << std::endl;
+  }
+}
+
 jFileOutStream testCreateFile(jAlluxioFileSystem client, const char *path)
 {
+  std::cout << std::endl << "TEST - CREATE FILE: ";
   jFileOutStream fileOutStream;
   bool fileExists = false;
 
@@ -103,15 +196,12 @@ jFileOutStream testCreateFile(jAlluxioFileSystem client, const char *path)
 
   if (fileOutStream == NULL) 
   {
-    printf("failed to create alluxio file %s\n", path);
-    goto exit;
+     std::cout << "FAILED - Failed to create alluxio file: " << path << std::endl;
   }
   else
   {
-     printf("created alluxio file:%s\n", path);
+      std::cout << "SUCCESS - Created alluxio file: " << path << std::endl;
   }
-
-exit:
 
   return fileOutStream;
 }
@@ -119,6 +209,7 @@ exit:
 void testReadLargeFile(jAlluxioFileSystem client, jFileInStream fileInStream, 
       const char* path, char* inputBuffer, int bufferSize)
 {
+  std::cout << std::endl << "TEST - READ LARGE FILE: ";
   std::chrono::duration<double> duration = std::chrono::duration<double>::zero();
   std::chrono::duration<double> elapsedTime = std::chrono::duration<double>::zero();
   std::chrono::duration<double> bufferCreationTime = std::chrono::duration<double>::zero();
@@ -130,7 +221,7 @@ void testReadLargeFile(jAlluxioFileSystem client, jFileInStream fileInStream,
   const bool measureTime = true;
 
   openOptions->setReadType(CACHE_PROMOTE);
-
+  
   // Now do the reading from Alluxio
   startTime = std::chrono::system_clock::now();
   fileInStream = client->openFile(path, openOptions);
@@ -141,12 +232,12 @@ void testReadLargeFile(jAlluxioFileSystem client, jFileInStream fileInStream,
 
   if (fileInStream == NULL) 
   {
-     printf("failed to open alluxio file %s\n", path);
+     std::cout << "failed to open alluxio file " << path << std::endl;
      goto exit;
   }
   else
   {
-     printf("successfully opened file:%s for reading\n", path);
+      std::cout << "successfully opened file: " << path << " for reading" << std::endl;
   }
 
   elapsedTime = std::chrono::duration<double>::zero();
@@ -178,6 +269,7 @@ exit:
 
 void testCopyFile(jAlluxioFileSystem client, const char *inPath, const char *alluxioPath)
 {
+  std::cout << std::endl << "TEST - COPY FILE: ";
   const char *fileNameInInpath;
   jFileOutStream targetOutStream;
   jFileInStream  fileInStream;
@@ -195,11 +287,14 @@ void testCopyFile(jAlluxioFileSystem client, const char *inPath, const char *all
 
   std::cout.precision(15);
 
+  AlluxioClientContext localContext;
+  AlluxioFileSystem afs(localContext);
+
   createOptions = AlluxioCreateFileOptions::getCreateFileOptions();
 
   createOptions->setWriteType(CACHE_THROUGH);
 
-  targetOutStream = client->createFile(alluxioPath, createOptions);
+  targetOutStream = afs.createFile(alluxioPath, createOptions);
 
   startTime = std::chrono::system_clock::now();
   inputFile.open(inPath, std::ios::in | std::ios::binary);
@@ -254,17 +349,29 @@ void testCopyFile(jAlluxioFileSystem client, const char *inPath, const char *all
   delete(targetOutStream);
 
   // Now do the reading from Alluxio
-  testReadLargeFile(client, fileInStream, alluxioPath, inputBuffer, bufferSize);
+  testReadLargeFile(&afs, fileInStream, alluxioPath, inputBuffer, bufferSize);
 
   free(inputBuffer);
 
   return;
 }
 
-void testAppendFile(jAlluxioFileSystem client, char* path, char* appendString)
+void testAppendFile(jAlluxioFileSystem client, const char* path, char* appendString)
 {
+    std::cout << std::endl << "TEST - APPEND FILE: ";
     // TODO: This is all common code (from testCopyFile).  It should be encapsulated
-    client->appendToFile(path, appendString, strlen(appendString));
+    //client->appendToFile(path, appendString, strlen(appendString));
+    jFileOutStream targetOutStream;
+    AlluxioCreateFileOptions* options = AlluxioCreateFileOptions::getCreateFileOptions();
+    options->setWriteType(CACHE_THROUGH);
+    
+    targetOutStream = client->openFileForAppend(path, options);
+
+    // Note that this strlen test only works if the append string is a string.  If it's a byte buffer
+    // it could get truncated in the middle.
+    targetOutStream->write(appendString, strlen(appendString));
+
+    client->completeAppend(path, targetOutStream);
 
     std::cout << "Successfully appended: \n\"" << appendString << "\" to file " <<
         path << std::endl;
@@ -272,39 +379,35 @@ void testAppendFile(jAlluxioFileSystem client, char* path, char* appendString)
 
 void testWriteFile(jFileOutStream fileOutStream)
 {
-  char content[] = "hello, alluxio!!\n";
+  std::cout << std::endl << "TEST - WRITE FILE: ";
+  char content[] = "hello, alluxio!!";
   fileOutStream->write(content, strlen(content));
-  printf("Successfully wrote %s to file\n", content);
-
+  std::cout << "SUCCESS - Wrote \"" << content << "\" to file" << std::endl;
 }
 
 jFileInStream testOpenFile(jAlluxioFileSystem client, const char *path)
 {
-   char *rpath;
-   jFileInStream fileInStream;
-
-   fileInStream = client->openFile(path);
-
-   printf("Successfully opened file:%s\n", path);
-
-exit:
-
-   return fileInStream;
+  std::cout << std::endl << "TEST - OPEN FILE: ";
+  char *rpath;
+  jFileInStream fileInStream = client->openFile(path);
+  std::cout << "SUCCESS - Opened file: " << path << std::endl;
+  return fileInStream;
 }
 
 void testReadFile(jFileInStream fileInStream)
 {
+  std::cout << std::endl << "TEST - READ FILE: ";
   char buf[32];
   int rdSz = fileInStream->read(buf, 31);
   buf[rdSz] = '\0';
-  printf("Content of the created file:\n");
-  printf("%s\n", buf);
+  std::cout << "SUCCESS - Content of the created file:" << buf << std::endl;
 }
 
 void testDeleteFile(jAlluxioFileSystem client, const char *path, bool recursive)
 {
+  std::cout << std::endl << "TEST - DELETE FILE: ";
   client->deletePath(path, recursive);
-  printf("successfully deleted path %s\n", path);
+  std::cout << "SUCCESS - Deleted path " << path << std::endl;
 }
 
 
@@ -328,14 +431,14 @@ int main(int argc, char*argv[])
   }
 
   try {
-      AlluxioClientContext acc (host, port);
-      jAlluxioFileSystem client = AlluxioFileSystem::getFileSystem(&acc);
-      if (client == NULL) {
-          die("fail to create alluxio client");
-      }
+      AlluxioClientContext::connect(host, port, awsAccessKey, awsSecretKey);
+      AlluxioClientContext acc;
+      AlluxioFileSystem stackFS(acc);
+      jAlluxioFileSystem client = &stackFS;
       
       // Test the creation of a file with the default options
-      jFileOutStream fileOutStream = testCreateFile(client, gFileToCreate);
+      jFileOutStream fileOutStream;
+      fileOutStream = testCreateFile(client, gFileToCreate);
 
       // Close and delete created file
       fileOutStream->close();
@@ -359,33 +462,66 @@ int main(int argc, char*argv[])
       fileInStream->close(); 
       delete fileInStream; 
 
+      // Do an ls to see the file we created
+      testLsCommand(client, gFileToCreate, ListPathFilter::NONE);
+
       // Test file deletion
       testDeleteFile(client, gFileToCreate, false);
-
-      // Test path deletion
-      testDeleteFile(client, gDirToCreate, true);
 
       // Create a new directory
       testCreateDirectory(client, gDirToCreate);
 
+      // Test directory creation
+      testDirectoryExists(client, gDirToCreate);
+
+      // Test directory shows up in ls
+      testLsCommand(client, gDirToCreate, ListPathFilter::DIRECTORIES_ONLY);
+
       if (file != NULL)
       {
-          char* alluxioFile = inputFileToAlluxioPath(file);
+          std::string alluxioFile = inputFileToAlluxioPath(file);
 
-          // Copy file (if specified) to new directory
-          testCopyFile(client, file, alluxioFile);
+          // FIXME: Make number of threads a command line option
+          const int numThreads = 1;
+          std::vector<std::thread> threads;
+          std::vector<std::string> fileNames;
+
+          // Copy a variable number of files to Alluxio (in parallel)
+          for (int i=0; i<numThreads; i++)
+          {
+              fileNames.push_back(std::string(alluxioFile + "." + std::to_string(i)));
+              threads.push_back(std::thread(testCopyFile, client, file, fileNames.back().c_str()));
+          }
+
+          for (int j=0; j<numThreads; j++)
+          {
+              threads.back().join();
+              threads.pop_back();
+          }
+
+          // Copy a single file to Alluxio (required for append test below)
+          testCopyFile(client, file, alluxioFile.c_str());
 
           // Append to file
-          testAppendFile(client, alluxioFile, appendString);
+          testAppendFile(client, alluxioFile.c_str(), appendString);
 
-          free(alluxioFile);
+          // Test seek
+          testSeek(client, alluxioFile.c_str());
+
+          // Test skip
+          testSkip(client, alluxioFile.c_str());
+
+          // Get file size
+          testGetFileSize(client, alluxioFile.c_str());
       }
 
-      // Cleanup
-      delete client;
+      // Test path deletion
+      testDeleteFile(client, gDirToCreate, true);
 
   } catch (const jni::NativeException &e) {
     e.dump();
   }
   return 0;
 }
+
+/* vim: set ts=4 sw=4 : */

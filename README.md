@@ -1,15 +1,19 @@
 # liballuxio
+
 C/C++ API for Alluxio (formerly Tachyon)
 
 # Requirement:
+
   * JDK 1.7+
   * Autoconf, Automake, and Libtool (for maintainer)
     - On Ubuntu, `sudo apt-get install autoconf automake libtool`.
 
 # Compatibility:
+
 The library currently supports Alluxio 1.2.0.
 
 # Compilation:
+
 If you are a maintainer, you need to first invoke the `boostrap` script to generate the necessary
 `configure` script.
 
@@ -38,15 +42,17 @@ APIs. Then link the liballuxio library to your object files to compile an execut
 # Usage:
 
 To run the client executable, make sure that:
-1. `libjvm.so` is in the `LD_LIBRARY_PATH` 
+
+1. `libjvm.so` is in the `LD_LIBRARY_PATH`
 2. Alluxio Java client jar is in the `CLASSPATH` or modify the CLASSPATH constants at the top of src/JNIHelper.h.
 
 *Example* settings of the environment variables are:
+
 1. `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
 2. `export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar`.
 
-The `env.sh` in this directory is a handy example script that you can invoke 
-(`source env.sh`) before running the client executable. Modify this script if necessary.
+**Lazy way**: run `source env.sh` in this directory. The `env.sh` is a handy example script that you can invoke 
+before running the client executable. Modify this script if necessary.
 
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
 

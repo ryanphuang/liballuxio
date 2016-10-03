@@ -19,7 +19,25 @@
 
 using namespace alluxio::jni;
 
-std::map<JNIEnv *, ClassCache *> ClassCache::s_caches;
+/**
+  Dump the exception information to a string and return it.
+*/
+std::string NativeException::toString() const {
+  std::string exceptionInfo;
+  if (m_detail != nullptr) {
+    try {
+      m_detail->getStackTrace(exceptionInfo);
+    }
+    catch (...) {
+      // Suppress exception since we call this when handling an exception
+      // already.
+      exceptionInfo = m_msg + ": <Exception while trying to get java stack>";
+    }
+  } else {
+    exceptionInfo = m_msg;
+  }
+  return (exceptionInfo);
+}
 
 void JavaThrowable::printStackTrace() const
 {
@@ -87,13 +105,20 @@ FieldNotFoundException::FieldNotFoundException(const char *className,
 
 ClassCache* ClassCache::instance(JNIEnv *env)
 {
-  std::map<JNIEnv*, ClassCache*>::iterator it = s_caches.find(env);
-  if (it != s_caches.end()) {
-    return it->second;
+  return ClassCaches::getInstance().getCache(env);
+}
+
+ClassCache* ClassCaches::getCache(JNIEnv *env)
+{
+  std::lock_guard<std::mutex> guard(m_cache_lock);
+  std::map<JNIEnv *, std::shared_ptr<ClassCache> >::iterator it =
+      m_caches.find(env);
+  if (it != m_caches.end()) {
+    return it->second.get();
   }
-  ClassCache* cache = new ClassCache(env);
-  s_caches.insert(std::make_pair(env, cache));
-  return cache;
+  std::shared_ptr<ClassCache> cache(new ClassCache(env));
+  m_caches.insert(std::make_pair(env, cache));
+  return cache.get();
 }
 
 jclass ClassCache::get(const char *className)
@@ -631,10 +656,25 @@ JNIEnv* JNIHelper::getEnv()
     }
     const char *classpath_opt = "-Djava.class.path=";
     size_t cp_len = strlen(classpath) + strlen(classpath_opt) + 1;
-    char * classpath_arg = (char *) malloc(sizeof(char) * cp_len);
-    snprintf(classpath_arg, cp_len, "%s%s", classpath_opt, classpath);
-    options[0].optionString = classpath_arg;
-    // TODO: we may want to add other JVM options
+
+    // Construct the CLASSPATH argument.  We add in the alluxio jar, as well
+    // as the Jackson jars
+    std::string classpathString(classpath_opt);
+    classpathString.append(classpath);
+
+    // For base alluxio support
+    classpathString.append(":");
+    classpathString.append(CLASSPATH_ALLUXIO_JAR);
+
+    // For Jackson support (required by AWS S3a library)
+    classpathString.append(":");
+    classpathString.append(CLASSPATH_JACKSON_JARS);
+
+    // For the time being, we turn off client logging for Alluxio
+    classpathString.append(":");
+    classpathString.append(CLASSPATH_SLF4J_JAR);
+
+    options[0].optionString = const_cast<char *>(classpathString.c_str());
 
     JavaVMInitArgs args;
     args.version = JNI_VERSION_1_2;
@@ -688,17 +728,23 @@ bool JNIHelper::getThrowableStackTrace(JNIEnv *env, jthrowable exce, std::string
     jobject sWriter = _env.newObject("java/io/StringWriter", "()V");
     jobject pWriter = _env.newObject("java/io/PrintWriter", "(Ljava/io/Writer;Z)V",
                                       sWriter, (jboolean) true);
-    _env.callMethod(NULL, exce, "java/lang/Throwable", "printStackTrace",
-                    "(Ljava/io/PrintWriter;)V", pWriter);
-    jvalue ret;
-    _env.callMethod(&ret, sWriter, "toString", "()Ljava/lang/String;");
-    if (ret.l != NULL) {
-      jstring strace = (jstring) (ret.l);
-      _env.jstringToString(strace, out);
-      return true;
-    } else {
-      return false;
+
+    jclass cls = env->FindClass("java/lang/Throwable");
+    if (cls != NULL) {
+      jmethodID mid =
+          env->GetMethodID(cls, "printStackTrace", "(Ljava/io/PrintWriter;)V");
+      if (mid != 0) {
+        env->CallVoidMethod(exce, mid, pWriter);
+        jvalue ret;
+        _env.callMethod(&ret, sWriter, "toString", "()Ljava/lang/String;");
+        if (ret.l != NULL) {
+          jstring strace = (jstring)(ret.l);
+          _env.jstringToString(strace, out);
+          return true;
+        }
+      }
     }
+    return false;
   } catch (NativeException& e) {
     e.discard();
     return false;

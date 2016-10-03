@@ -13,6 +13,8 @@
 #include<stdint.h>
 #include<chrono>
 #include<functional>
+#include <memory>
+#include <vector>
 
 #include "JNIHelper.h"
 
@@ -46,11 +48,12 @@ enum ReadType {
 };
 
 enum WriteType {
-  ASYNC_THROUGH,
-  CACHE_THROUGH,
   MUST_CACHE,
-  NONE,
+  TRY_CACHE, // Deprecated
+  CACHE_THROUGH,
   THROUGH,
+  ASYNC_THROUGH,
+  NONE,
 };
 
 class AlluxioFileSystem;
@@ -67,6 +70,7 @@ class OutStream;
 class FileOutStream;
 class FileInStream;
 
+//typedef ClientContext* jClientContext;
 typedef AlluxioCreateFileOptions* jAlluxioCreateFileOptions;
 typedef AlluxioOpenFileOptions* jAlluxioOpenFileOptions;
 typedef Configuration* jConfiguration;
@@ -79,6 +83,25 @@ typedef InStream* jInStream;
 typedef OutStream* jOutStream;
 typedef FileOutStream* jFileOutStream;
 typedef FileInStream*  jFileInStream;
+
+
+class JNIStringBase {
+  public:
+    JNIStringBase(jni::Env env, jstring localString): m_env(env) { 
+      m_string = reinterpret_cast<jstring>(env->NewGlobalRef(localString));
+      // this means after the constructor, the localObj will be destroyed
+      env->DeleteLocalRef(localString);
+    }
+
+    ~JNIStringBase() { m_env->DeleteGlobalRef(m_string); }
+
+    jstring getJString() { return m_string; }
+    jni::Env& getEnv() { return m_env; }
+
+  protected:
+    jni::Env m_env;
+    jstring m_string; // the underlying jstring
+};
 
 class JNIObjBase {
   public:
@@ -98,29 +121,41 @@ class JNIObjBase {
     jobject m_obj; // the underlying jobject
 };
 
-class AlluxioClientContext 
+class AlluxioClientContext
 {
-    // TODO: Clean up this class so that we construct first, then set the
-    // host and port after
     public:
-        AlluxioClientContext(const char *host, const char *port);
+        AlluxioClientContext();
+        ~AlluxioClientContext();
+        static void connect(const char *host, const char *port, 
+                const char *accessKey, const char *secretKey);
+        static void setAlluxioStringConstant(jni::Env &env, const char *key, const char *value);
+
+        jobject getJObj() { return m_baseFileSystem; }
+        jni::Env &getEnv() { return m_env; }
 
     private:
+        bool m_mustDetachInDtor;
+        bool m_mustDeleteLocalRef;
+        jni::Env m_env;
+        /// Pointer to Java object that has all APIs for Alluxio file system.
+        jobject m_baseFileSystem;
+
+        void attach();
 };
 
 class AlluxioCreateFileOptions : public JNIObjBase
 {
-    public:
-        static jAlluxioCreateFileOptions getCreateFileOptions();
-        void setWriteType(WriteType writeType);
-        jobject getOptions()
-        {
-            return m_obj;
-        }
+   public:
+       static jAlluxioCreateFileOptions getCreateFileOptions();
+       void setWriteType(WriteType writeType);
+       jobject getOptions()
+       {
+           return m_obj;
+       }
 
-    private:
-        AlluxioCreateFileOptions(jni::Env env, jobject createFileOptions) :
-            JNIObjBase(env, createFileOptions) {}
+   private:
+       AlluxioCreateFileOptions(jni::Env env, jobject createFileOptions) :
+           JNIObjBase(env, createFileOptions) {}
 };
 
 
@@ -144,42 +179,34 @@ class AlluxioOpenFileOptions : public JNIObjBase
             JNIObjBase(env, openFileOptions) {}
 };
 
-class AlluxioFileSystem : public JNIObjBase {
+/// Enum to control what is filtered in the listPath call
+enum class ListPathFilter {
+    /// No filtering in listPath().  Return everything under given path.
+    NONE,
+    /// Only return directories in listPath() call
+    DIRECTORIES_ONLY
+};
 
-  public:
-    static jAlluxioFileSystem getFileSystem(AlluxioClientContext *acc);
-    static jAlluxioFileSystem copyClient(jAlluxioFileSystem client);
+/**
+   Abstraction layer to alluxio file system. 
+*/
+class AlluxioFileSystem {
+    public:
+        AlluxioFileSystem(AlluxioClientContext& clientContext);
+        bool exists(const char *path);
+        long int fileSize(const char *path);
+        void createDirectory(const char *path);
+        void deletePath(const char *path, bool recursive = false);
 
-    bool exists(const char *path);
+        jFileInStream openFile(const char *path, AlluxioOpenFileOptions *options = nullptr);
+        jFileOutStream createFile(const char * path, AlluxioCreateFileOptions *options = nullptr);
+        jFileOutStream openFileForAppend(const char *path, AlluxioCreateFileOptions *options);
+        void completeAppend(const char *path, jFileOutStream fileOutStream);
+        void renameFile(const char *origPath, const char *newPath);
+        std::vector<std::string> listPath(const char * path, ListPathFilter filter);
 
-    jFileOutStream createFile(const char *path);
-    jFileOutStream createFile(const char *path, AlluxioCreateFileOptions *options);
-    jFileInStream openFile(const char *path);
-    jFileInStream openFile(const char *path, AlluxioOpenFileOptions *options);
-    void renameFile(const char *origPath, const char *newPath);
-
-    void renameFile(const char *origPath, const char *newPath, 
-            AlluxioRenameFileOptions *options)
-    {
-        // TODO: To be implemented
-        throw std::bad_function_call();
-    }
-
-    void appendToFile(const char *path, void *buff, int length);
-    void appendToFile(const char *path, void *buff, int length, 
-            AlluxioCreateFileOptions *options);
-    void createDirectory(const char *path);
-
-    void deletePath(const char *path);
-    void deletePath(const char *path, bool recursive);
-
-  private:
-    // hide constructor, must be instantiated using getFileSystem method
-    AlluxioFileSystem(jni::Env env, jobject tfs, AlluxioClientContext *acc) : 
-        JNIObjBase(env, tfs),
-        clientContext(acc) {}
-
-    AlluxioClientContext *clientContext;
+    private:
+        AlluxioClientContext& mClient;
 };
 
 class AlluxioByteBuffer : public JNIObjBase {

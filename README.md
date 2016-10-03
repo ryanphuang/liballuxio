@@ -6,6 +6,9 @@ C/C++ API for Alluxio (formerly Tachyon)
   * Autoconf, Automake, and Libtool (for maintainer)
     - On Ubuntu, `sudo apt-get install autoconf automake libtool`.
 
+# Compatibility:
+The library currently supports Alluxio 1.2.0.
+
 # Compilation:
 If you are a maintainer, you need to first invoke the `boostrap` script to generate the necessary
 `configure` script.
@@ -36,7 +39,7 @@ APIs. Then link the liballuxio library to your object files to compile an execut
 
 To run the client executable, make sure that:
 1. `libjvm.so` is in the `LD_LIBRARY_PATH` 
-2. Alluxio Java client jar is in the `CLASSPATH`
+2. Alluxio Java client jar is in the `CLASSPATH` or modify the CLASSPATH constants at the top of src/JNIHelper.h.
 
 *Example* settings of the environment variables are:
 1. `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
@@ -47,6 +50,3 @@ The `env.sh` in this directory is a handy example script that you can invoke
 
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
 
-For an actual usage example of the C++ client, refer to the
-[load generator](https://github.com/stormspirit/imembench/blob/master/loadgenerator/tachyondriver.cc) we
-implemented in the [imembench](https://github.com/stormspirit/imembench) project based on this client.

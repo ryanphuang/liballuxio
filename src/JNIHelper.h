@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sstream>
+#include <memory>
+#include <mutex>
 
 #include <string>
 #include <stdexcept>
@@ -25,6 +28,17 @@
 #define JRUNTIMEEXCEPT_CLS "RuntimeException"
 
 #define JRUNTIMEEXCEPT_CTOR "(java/lang/String;)V"
+
+// FIXME: The location of these JARs should be specified using a config file.  We should also
+// be more flexible about release numbers.
+// Defines for classpath additions needed by liballuxio.  If the locations of these files
+// don't match in your environment, you'll either have to set the CLASSPATH env var, or modify
+// these defines to point to the correct location
+#define CLASSPATH_ALLUXIO_JAR "$HOME/alluxio/core/client/target/alluxio-core-client-jar-with-dependencies.jar"
+#define CLASSPATH_SLF4J_JAR "$HOME/slf4j/slf4j-nop-1.7.21.jar"
+
+// Jackson JARs are required if you plan to configure an S3 underfs
+#define CLASSPATH_JACKSON_JARS "$HOME/jackson/jackson-annotations-2.8.1.jar:$HOME/jackson/jackson-core-2.8.1.jar:$HOME/jackson/jackson-databind-2.8.1.jar"
 
 #define JVM_BUF_LEN   1 
 #define MAX_CLS_SIG 256
@@ -116,15 +130,7 @@ class NativeException: public std::exception {
 public:
   NativeException() {}
   NativeException(const char *msg, JavaThrowable *detail = NULL)
-                    : m_msg(msg), m_detail(detail) {}
-
-  /**
-   * Get the exception message.
-   */
-  const char* what()
-  { 
-    return m_msg.c_str(); 
-  }
+                    : m_detail(detail), m_msg(msg), m_DetailedMsg(toString()) {}
 
   /**
    * Get the original Java exception that was thrown.
@@ -141,6 +147,11 @@ public:
     fprintf(stderr, "Message: %s\nFrom Java: ", m_msg.c_str());
     printDetailStackTrace();
   }
+
+  /**
+   * Dump the exception information to a string
+   */
+  std::string toString() const;
 
   /**
    * Discard this exception. Mainly clean up the original Java exception.
@@ -162,6 +173,14 @@ public:
     }
   }
 
+  /**
+   * Returns the explanatory string
+   */
+  const char* what() const noexcept
+  {
+     return m_DetailedMsg.c_str();
+  }
+
   // We don't free the m_detail in destructor because the exception
   // might be re-thrown, and we don't want to destroy the detail.
   // It is up to the final exception handler to free up the exception
@@ -171,6 +190,7 @@ public:
 protected:
   JavaThrowable *m_detail;
   std::string m_msg;
+  std::string m_DetailedMsg;
   std::string m_stack_trace;
 };
 
@@ -380,6 +400,25 @@ public:
     checkExceptionAndClear();
   }
 
+  inline void AttachCurrentThread() {
+      JavaVM *jvm = nullptr;
+      m_env->GetJavaVM(&jvm);
+      jvm->AttachCurrentThread((void**)&m_env, NULL);
+  }
+
+  inline bool GetIsThreadDetached() {
+      JavaVM *jvm = nullptr;
+      m_env->GetJavaVM(&jvm);
+      int getEnvStat = jvm->GetEnv((void **)&m_env, JNI_VERSION_1_6);
+      return (getEnvStat == JNI_EDETACHED);
+  }
+
+  inline void DetachCurrentThread() {
+      JavaVM *jvm = nullptr;
+      m_env->GetJavaVM(&jvm);
+      jvm->DetachCurrentThread();
+  }
+
 private:
   jobject newObjectV(jclass cls, const char *className, const char *ctorSignature, 
                       va_list args);
@@ -406,6 +445,7 @@ private:
  */
 class ClassCache {
 public: 
+  ClassCache(JNIEnv *env): m_env(env) {}
   ~ClassCache();
   static ClassCache* instance(JNIEnv *env);
 
@@ -413,18 +453,27 @@ public:
   bool set(const char *, jclass);
 
 private:
-  // hide constructor so the instance method is the only API for
-  // creating a cache
-  ClassCache(JNIEnv *env): m_env(env) {}
-
-private:
   Env m_env;
   std::map<const char *, jclass>  m_cls_map;
   Mutex m_lock;
-
-  static std::map<JNIEnv *, ClassCache *> s_caches;
 };
 
+/**
+ * A singleton class that maintains a list of ClassCache objects
+ */
+class ClassCaches {
+public:
+  static ClassCaches &getInstance() {
+    static ClassCaches instance;
+    return instance;
+  }
+
+  ClassCache* getCache(JNIEnv *env);
+
+private:
+  std::map<JNIEnv *, std::shared_ptr<ClassCache> > m_caches;
+  std::mutex m_cache_lock;
+};
 
 /**
  * A singleton helper class to obtain the JNI env and facilitate other common

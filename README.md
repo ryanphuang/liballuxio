@@ -49,7 +49,7 @@ To run the client executable, make sure that:
 *Example* settings of the environment variables are:
 
 1. `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
-2. `export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar`.
+2. `export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.2.0-jar-with-dependencies.jar`.
 
 **Lazy way**: run `source env.sh` in this directory. The `env.sh` is a handy example script that you can invoke 
 before running the client executable. Modify this script if necessary.

@@ -5,7 +5,7 @@ libjvmpaths=(
   "/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/jre/lib/server" # MacOS
 )
 #clientjarpath=$HOME/tachyon/lib/tachyon-client-0.6.4-jar-with-dependencies.jar
-clientjarpath=$HOME/alluxio/core/client/target/alluxio-core-client-1.0.1-jar-with-dependencies.jar
+clientjarpath=$HOME/alluxio/core/client/target/alluxio-core-client-1.2.0-jar-with-dependencies.jar
 
 found=0
 for path in "${libjvmpaths[@]}"

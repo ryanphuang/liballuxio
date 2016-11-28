@@ -47,13 +47,50 @@ To run the client executable, make sure that:
 1. `libjvm.so` is in the `LD_LIBRARY_PATH`
 2. Alluxio Java client jar is in the `CLASSPATH` or modify the CLASSPATH constants at the top of src/JNIHelper.h.
 
-*Example* settings of the environment variables are:
+Example settings of the environment variables are:
 
 1. `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
 2. `export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.2.0-jar-with-dependencies.jar`.
 
-**Lazy way**: run `source env.sh` in this directory. The `env.sh` is a handy example script that you can invoke 
-before running the client executable. Modify this script if necessary.
+**Lazy way**: `source env.sh`. The `env.sh` is a handy example script that you can invoke 
+before running the client executable. Modify the script (especially `clientjarpath`) 
+if necessary.
 
+# Sample Client:
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
 
+Example run: `src/alluxiotest localhost 19998`
+
+If successful, the client will output:
+
+```
+$ src/alluxiotest localhost 19998
+
+log4j:WARN No appenders could be found for logger (alluxio.logger.type).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+
+TEST - CREATE FILE: SUCCESS - Created alluxio file: /hello.txt
+
+TEST - DELETE FILE: SUCCESS - Deleted path /hello.txt
+
+TEST - CREATE FILE WITH OPTIONS: SUCCESS - Created alluxio file: /hello.txt
+
+TEST - WRITE FILE: SUCCESS - Wrote "hello, alluxio!!" to file
+
+TEST - OPEN FILE: SUCCESS - Opened file: /hello.txt
+
+TEST - READ FILE: SUCCESS - Content of the created file:hello, alluxio!!
+
+TEST - LS COMMAND: SUCCESS - ls command found the path /hello.txt
+
+TEST - DELETE FILE: SUCCESS - Deleted path /hello.txt
+
+TEST - CREATE DIRECTORY: SUCCESS - Created alluxio dir /alluxiotest
+
+TEST - DIRECTORY EXISTS: SUCCESS - Alluxio dir /alluxiotest exists
+
+TEST - LS COMMAND: SUCCESS - ls command found the path /alluxiotest
+
+TEST - DELETE FILE: SUCCESS - Deleted path /alluxiotest
+```

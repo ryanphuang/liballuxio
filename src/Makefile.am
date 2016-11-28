@@ -11,7 +11,7 @@ bin_PROGRAMS = alluxiotest
 
 alluxiotest_SOURCES = AlluxioTest.cc Util.cc Util.h Alluxio.h
 alluxiotest_CPPFLAGS = $(JNI_INCLUDES)
-alluxiotest_LDADD = liballuxio.la
+alluxiotest_LDADD = liballuxio.la -lpthread
 
 
 

@@ -1,8 +1,10 @@
+#!/bin/bash
+
 find_libjvm()
 {
   if [[ -z $JAVA_HOME ]]; then
     echo "JAVA_HOME not set"
-    exit 1
+    return 1
   fi
   platformstr=`uname`
   jvmpath=""

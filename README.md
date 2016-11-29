@@ -52,9 +52,8 @@ Example settings of the environment variables are:
 1. `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server`.
 2. `export CLASSPATH=$CLASSPATH:$HOME/alluxio/core/client/target/alluxio-core-client-1.2.0-jar-with-dependencies.jar`.
 
-**Lazy way**: `source env.sh`. The `env.sh` is a handy example script that you can invoke 
-before running the client executable. Modify the script (especially `clientjarpath`) 
-if necessary.
+**Lazy way**: Modify script `bin/alluxio-client-env.sh` (especially `clientjarpath`) and 
+then `source bin/alluxio-client-env.sh` before running the client executable.
 
 # Sample Client:
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.

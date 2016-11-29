@@ -100,7 +100,13 @@ if test "x$JNI_LDFLAGS" != x; then
 else
   # Set JNI_LDFLAGS if not set yet
   if test "$OS_NAME" = "darwin"; then
-    JNI_LDFLAGS="-framework JavaVM"
+    # JNI_LDFLAGS="-framework JavaVM"
+    # using this framework importing style on OSX will likely
+    # wind up loading a low version jvm even when it's configured 
+    # with higher version one. Nasty.
+    # fall back to the old ldflag style, (require setting LD_LIBRARY_PATH)
+    dir="$JAVA_HOME/jre/lib/server"
+    JNI_LDFLAGS="-L$dir -ljvm"
   elif test "$OS_NAME" = "linux"; then
     JNI_LDFLAGS=""
     for arch in i386 amd64; do

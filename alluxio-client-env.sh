@@ -30,7 +30,7 @@ find_alluxio()
 {
   base_dir=$ALLUXIO_HOME
   if [[ -z $base_dir ]]; then
-    base_dir=$HOME/Project/alluxio/1.2.0 # change if necessary
+    base_dir=$HOME/alluxio # change if necessary
   fi
   clientjarpath=$base_dir/core/client/target/alluxio-core-client-1.2.0-jar-with-dependencies.jar
   if [ -f $clientjarpath ]; then

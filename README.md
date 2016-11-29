@@ -27,15 +27,15 @@ It is recommended that you build the project in a separate directory. For exampl
 cd liballuxio
 ./boostrap  # if you are a maintainer
 mkdir build
-mkdir bin
 cd build
-../configure --prefix=$(dirname $(pwd))/bin
+../configure --prefix=$(dirname $(pwd))/dist
 make
 make install
 ```
 
-Under `bin/lib` you should see both a static library `liballuxio.a` and a dynamic
-library `liballuxio.so` generated. The header file is in `bin/include`.
+Under `dist/lib` you should see both a static library `liballuxio.a` and a dynamic
+library `liballuxio.so` generated (or `liballuxio.dylib` in Mac). The header file 
+is in `dist/include`.
 
 In your Alluxio client C/C++ code, include the `Alluxio.h` header to use the available
 APIs. Then link the liballuxio library to your object files to compile an executable.
@@ -59,12 +59,12 @@ if necessary.
 # Sample Client:
 `alluxiotest` is a sample client executable that test the implemented C/C++ Alluxio APIs.
 
-Example run: `src/alluxiotest localhost 19998`
+Example run: `dist/bin/alluxiotest localhost 19998`
 
 If successful, the client will output:
 
 ```
-$ src/alluxiotest localhost 19998
+$ dist/bin/alluxiotest localhost 19998
 
 log4j:WARN No appenders could be found for logger (alluxio.logger.type).
 log4j:WARN Please initialize the log4j system properly.
